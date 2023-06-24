@@ -431,7 +431,7 @@ public extension NotificationHelper {
         body.append("Glucose: \(glucoseDesc)")
 
         if let oldValue {
-            let diff = Double(glucose.glucose - oldValue.glucose)
+            let diff = glucose.glucoseDouble - oldValue.glucoseDouble
             if diff >= 0 {
                 body.append("+")
             }
