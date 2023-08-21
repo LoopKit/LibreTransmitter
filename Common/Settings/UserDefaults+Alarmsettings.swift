@@ -15,7 +15,7 @@ extension UserDefaults {
 
         case mmAlwaysDisplayGlucose = "com.loopkit.libreAlwaysDisplayGlucose"
         case mmNotifyEveryXTimes = "com.loopkit.libreNotifyEveryXTimes"
-        case mmGlucoseAlarmsVibrate = "com.loopkit.libreGlucoseAlarmsVibrate"
+        
         case mmAlertLowBatteryWarning = "com.loopkit.libreLowBatteryWarning"
         case mmAlertInvalidSensorDetected = "com.loopkit.libreInvalidSensorDetected"
         // case mmAlertalarmNotifications
@@ -107,14 +107,7 @@ extension UserDefaults {
         }
     }
 
-    var mmGlucoseAlarmsVibrate: Bool {
-        get {
-            optionalBool(forKey: Key.mmGlucoseAlarmsVibrate.rawValue) ?? true
-        }
-        set {
-            set(newValue, forKey: Key.mmGlucoseAlarmsVibrate.rawValue)
-        }
-    }
+    
 
     var mmShowTransmitterBattery: Bool {
         get {
@@ -129,7 +122,7 @@ extension UserDefaults {
         [mmAlwaysDisplayGlucose, mmAlertLowBatteryWarning,
          mmAlertInvalidSensorDetected, mmAlertNewSensorDetected,
          mmAlertNoSensorDetected, mmAlertWillSoonExpire,
-         mmGlucoseAlarmsVibrate, mmShowPhoneBattery, mmShowTransmitterBattery]
+         mmShowPhoneBattery, mmShowTransmitterBattery]
     }
 
     var dangerModeActivated: Bool {

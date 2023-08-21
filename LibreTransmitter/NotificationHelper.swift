@@ -37,7 +37,7 @@ public enum NotificationHelper {
     public static var criticalAlarmsEnabled = false
 
     public static func vibrateIfNeeded(count: Int = 3) {
-        if UserDefaults.standard.mmGlucoseAlarmsVibrate {
+        if false {
             vibrate(times: count)
         }
     }
