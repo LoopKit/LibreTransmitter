@@ -258,7 +258,7 @@ struct SettingsView: View {
     }
 
     var advancedSection: some View {
-        Section(header: Text(LocalizedString("Advanced", comment: "Text describing header for advanced settings section"))) {
+        Section(header: Text(LocalizedString("Configuration", comment: "Text describing header for advanced settings section"))) {
             // these subviews don't really need to be notified once glucose unit changes
             // so we just pass glucoseunit directly on init
             NavigationLink(destination: AlarmSettingsView(glucoseUnit: self.glucoseUnit)) {

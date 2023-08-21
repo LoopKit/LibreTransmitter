@@ -103,10 +103,10 @@ struct Libre2DirectSetup: View {
                 getLeadingImage()
                 HStack {
                     InstructionList(instructions: [
-                        LocalizedString("Your sensor must be activated and fully warmed up", comment: "Label text for step 1 of libre2 setup"),
-                        LocalizedString("Disconnect and unpair any other app or device communicating with the sensor via bluetooth", comment: "Label text for step 2 of libre2 setup"),
-                        LocalizedString("Keep phone unlocked and your Loop app in the foreground", comment: "Label text for step 3 of libre2 setup"),
-                        LocalizedString("The Bluetooth connection will take up to four minutes before it starts working", comment: "Label text for step 3 of libre2 setup")
+                        LocalizedString("Your sensor must be activated and fully warmed up.", comment: "Label text for step 1 of libre2 setup"),
+                        LocalizedString("Disconnect and unpair any other app or device communicating with the sensor via bluetooth.", comment: "Label text for step 2 of libre2 setup"),
+                        LocalizedString("Keep phone unlocked and your Loop app in the foreground.", comment: "Label text for step 3 of libre2 setup"),
+                        LocalizedString("The Bluetooth connection will take up to four minutes before it starts working.", comment: "Label text for step 3 of libre2 setup")
                     ])
                 }
             }

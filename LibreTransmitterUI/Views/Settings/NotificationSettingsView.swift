@@ -122,7 +122,7 @@ struct NotificationSettingsView: View {
             Alert(title: Text(status.title), message: Text(status.message), dismissButton: .default(Text("Got it!")))
         }
 
-        .navigationBarTitle("Notification Settings")
+        .navigationBarTitle("Notification")
 
     }
 
