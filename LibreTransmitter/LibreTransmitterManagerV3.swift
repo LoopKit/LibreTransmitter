@@ -183,7 +183,7 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
     }
 
-    static public let pluginIdentifier: String = "LibreTransmitterManagerV3"
+    public let pluginIdentifier: String = "LibreTransmitterManagerV3"
 
     public required convenience init?(rawState: CGMManager.RawStateValue) {
 
