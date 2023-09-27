@@ -32,7 +32,7 @@ struct GlucoseSettingsView: View {
                 Toggle("Backfill from history", isOn: $mmBackfillFromHistory)
             }
             Section(header: Text(LocalizedString("Remote data storage", comment: "Text describing header for remote data storage"))) {
-                Toggle("Upload to nightscout", isOn: $mmSyncToNS)
+                Toggle("Upload to remote data service", isOn: $mmSyncToNS)
 
             }
             Section(header: Text(LocalizedString("Debug options", comment: "Text describing header for debug options in glucosesettingsview")), footer: Text(LocalizedString("Adds a lot of data to the Issue Report ", comment: "Text informing user of potentially large reports"))) {

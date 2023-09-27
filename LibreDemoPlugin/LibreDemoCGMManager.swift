@@ -23,7 +23,7 @@ class LibreDemoCGMManager: LibreTransmitterManagerV3 {
 
     override var localizedTitle: String { "Libre Demo" }
 
-    public override var managerIdentifier: String {
+    public var managerIdentifier: String {
         "LibreDemoCGMManager"
     }
 

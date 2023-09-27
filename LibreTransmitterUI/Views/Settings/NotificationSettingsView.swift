@@ -25,7 +25,6 @@ struct NotificationSettingsView: View {
 
         case mmAlwaysDisplayGlucose = "com.loopkit.libreAlwaysDisplayGlucose"
         case mmNotifyEveryXTimes = "com.loopkit.libreNotifyEveryXTimes"
-        case mmGlucoseAlarmsVibrate = "com.loopkit.libreGlucoseAlarmsVibrate"
         case mmAlertLowBatteryWarning = "com.loopkit.libreLowBatteryWarning"
         case mmAlertInvalidSensorDetected = "com.loopkit.libreInvalidSensorDetected"
         // case mmAlertalarmNotifications
@@ -53,7 +52,6 @@ struct NotificationSettingsView: View {
     @AppStorage(Key.mmAlertNoSensorDetected.rawValue) var mmAlertNoSensorDetected: Bool = true
     @AppStorage(Key.mmAlertSensorSoonExpire.rawValue) var mmAlertSensorSoonExpire: Bool = true
 
-    @AppStorage(Key.mmGlucoseAlarmsVibrate.rawValue) var mmGlucoseAlarmsVibrate: Bool = true
 
     // especially handled mostly for backward compat
     @AppStorage(Key.mmGlucoseUnit.rawValue) var mmGlucoseUnit: String = ""
@@ -80,9 +78,9 @@ struct NotificationSettingsView: View {
 
             }.clipped()
 
-            // Toggle("Adds Phone Battery", isOn: $mmShowPhoneBattery)
+            
             Toggle("Adds Transmitter Battery", isOn: $mmShowTransmitterBattery)
-            Toggle("Also vibrate", isOn: $mmGlucoseAlarmsVibrate)
+            
 
         }
     }
@@ -124,7 +122,7 @@ struct NotificationSettingsView: View {
             Alert(title: Text(status.title), message: Text(status.message), dismissButton: .default(Text("Got it!")))
         }
 
-        .navigationBarTitle("Notification Settings")
+        .navigationBarTitle("Notification")
 
     }
 

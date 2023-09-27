@@ -49,9 +49,9 @@ struct ModeSelectionView: View {
                 
                 HStack {
                     InstructionList(instructions: [
-                        LocalizedString("Sensor should be activated and fully warmed up", comment: "Label text for step 1 of connection setup"),
+                        LocalizedString("Sensor should be activated and fully warmed up.", comment: "Label text for step 1 of connection setup"),
                         LocalizedString("Select the type of setup you want.", comment: "Label text for step 2 of connection setup"),
-                        LocalizedString("Not all sensor types can be supported, see readme.md", comment: "Label text for step 3 of connection setup"),
+                        LocalizedString("Most libre 1 and libre 2 sensors are supported, except North America Libre 2; see readme.md for details.", comment: "Label text for step 3 of connection setup"),
                         LocalizedString("Fair warning: The sensor will be not be using the manufacturer's algorithm, and some safety mitigations present in the manufacturers algorithm might be missing when you use this.", comment: "Label text for step 4 of connection setup")
                     ])
                 }

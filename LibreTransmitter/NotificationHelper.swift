@@ -36,13 +36,9 @@ public enum NotificationHelper {
     // don't touch this please
     public static var criticalAlarmsEnabled = false
 
-    public static func vibrateIfNeeded(count: Int = 3) {
-        if UserDefaults.standard.mmGlucoseAlarmsVibrate {
-            vibrate(times: count)
-        }
-    }
+    
 
-    private static func vibrate(times: Int) {
+    private static func vibrate(times: Int=3) {
         guard times >= 0 else {
             return
         }
@@ -400,7 +396,11 @@ public extension NotificationHelper {
             titles.append("(Snoozed)")
         } else if alarm.isAlarming() {
             content.sound = .default
-            vibrateIfNeeded()
+            
+            if Features.glucoseAlarmsAlsoCauseVibration {
+                vibrate()
+            }
+            
         }
         titles.append(glucoseDesc)
 
