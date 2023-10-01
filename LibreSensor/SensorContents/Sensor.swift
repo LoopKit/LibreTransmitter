@@ -2,7 +2,23 @@ public extension UserDefaults {
     private enum Key: String {
         case sensor = "com.loopkit.libre2sensor"
         case calibrationMapping = "com.loopkit.libre2sensor-calibrationmapping"
+        case currentSensorUid = "com.loopkit.libre2sensor-currentSensorUid"
 
+    }
+    
+    var currentSensor: String? {
+        get {
+            string(forKey: Key.currentSensorUid.rawValue)
+        }
+        
+        set {
+            if let newValue {
+                set(newValue, forKey: Key.currentSensorUid.rawValue)
+            }
+            else {
+                removeObject(forKey: Key.currentSensorUid.rawValue)
+            }
+        }
     }
 
     var preSelectedSensor: Sensor? {

@@ -69,6 +69,11 @@ extension LibreTransmitterManagerV3 {
         logger.debug("got sensordata with valid crcs, sensor was ready")
         // self.lastValidSensorData = sensorData
 
+        
+        verifySensorChange(for: sensorData.uuid, activatedAt: Date() - TimeInterval(minutes: Double(sensorData.minutesSinceStart)))
+        
+        
+
         self.handleGoodReading(data: sensorData) { [weak self] error, glucoseArrayWithPrediction in
             guard let self else {
                 print(" handleGoodReading could not lock on self, aborting")

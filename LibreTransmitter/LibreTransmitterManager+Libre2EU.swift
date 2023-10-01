@@ -18,7 +18,10 @@ extension LibreTransmitterManagerV3 {
         }
 
     }
+    
 
+   
+    
     public func libreSensorDidUpdate(with bleData: Libre2.LibreBLEResponse, and Device: LibreTransmitterMetadata) {
         self.logger.debug("got sensordata: \(String(describing: bleData))")
         let typeDesc = Device.sensorType().debugDescription
@@ -37,11 +40,16 @@ extension LibreTransmitterManagerV3 {
               let calibrationData,
               let sensor = UserDefaults.standard.preSelectedSensor else {
             logger.error("calibrationdata, sensor uid or mapping missing, could not continue")
+            
+            
+            
             self.delegateQueue.async {
                 self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.noCalibrationData))
             }
             return
         }
+        
+        
 
         guard mapping.reverseFooterCRC == calibrationData.isValidForFooterWithReverseCRCs &&
                 mapping.uuid == sensor.uuid else {
@@ -57,6 +65,11 @@ extension LibreTransmitterManagerV3 {
             NotificationHelper.sendSensorExpireAlertIfNeeded(minutesLeft: minutesLeft)
 
         }
+        
+
+        verifySensorChange(for: sensor.uuid, activatedAt: Date() - TimeInterval(minutes: Double(bleData.age)))
+           
+        
 
         let sortedTrends = bleData.trend.sorted { $0.date > $1.date}
 

@@ -102,6 +102,39 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
         .joined(separator: ",\n")
         + ",\n Calibrationdata: \(c)"
     }
+    
+    public func verifySensorChange(for sensor: Data, activatedAt: Date) {
+        
+        let sensorId = sensor.hexEncodedString()
+        let currentSensor = UserDefaults.standard.currentSensor
+        
+        logger.debug("\(#function) for potential new sensor identified by uid: \(sensorId), currentsensor: \(String(describing: currentSensor))")
+        
+        guard currentSensor == nil || currentSensor != sensorId else {
+            logger.debug("\(#function) no sensorchange detected")
+            return
+        }
+        
+        logger.debug("\(#function) sensorchange detected")
+            
+        let event = PersistedCgmEvent(
+                        date: activatedAt,
+                        type: .sensorStart,
+                        deviceIdentifier: sensorId,
+                        expectedLifetime: .hours(24 * 14 + 12),
+                        warmupPeriod: .hours(1)
+                        )
+        
+        self.delegateQueue.async {
+            self.cgmManagerDelegate?.cgmManager(self, hasNew: [event])
+        }
+        
+        
+        UserDefaults.standard.currentSensor = sensorId
+        
+        
+        
+    }
 
     public var debugDescription: String {
 
