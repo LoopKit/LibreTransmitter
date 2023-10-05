@@ -129,11 +129,13 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
         do {
             let decryptedBLE = Data(try Libre2.decryptBLE(id: [UInt8](sensor.uuid), data: [UInt8](rxBuffer)))
             var sensorUpdate = Libre2.parseBLEData(decryptedBLE)
+ 
 
             guard sensorUpdate.crcVerified else {
                 delegate?.libreSensorDidUpdate(with: .checksumValidationError)
                 return
             }
+            
 
             metadata = LibreTransmitterMetadata(hardware: nil, firmware: nil, battery: 100,
                                                 name: Self.shortTransmitterName,

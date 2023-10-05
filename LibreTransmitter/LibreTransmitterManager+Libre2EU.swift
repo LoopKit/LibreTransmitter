@@ -14,6 +14,7 @@ extension LibreTransmitterManagerV3 {
     public func libreSensorDidUpdate(with error: LibreError) {
 
         self.delegateQueue.async {
+            self.logDeviceCommunication("Sensor error \(error)", type: .error)
             self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(error))
         }
 
@@ -31,10 +32,14 @@ extension LibreTransmitterManagerV3 {
         let mins =  4.5
         if let earlierplus = lastDirectUpdate?.addingTimeInterval(mins * 60), earlierplus >= now {
             logger.debug("last ble update was less than \(mins) minutes ago, aborting loop update")
+            self.logDeviceCommunication("Sensor didUpdate (not used) \(bleData)", type: .receive)
             return
         }
 
         logger.debug("Directly connected to libresensor of type \(typeDesc). Details:  \(Device.description)")
+        
+        self.logDeviceCommunication("Sensor \(typeDesc) didUpdate \(bleData)", type: .receive)
+        
 
         guard let mapping = UserDefaults.standard.calibrationMapping,
               let calibrationData,

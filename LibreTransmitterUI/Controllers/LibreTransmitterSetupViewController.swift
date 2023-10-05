@@ -69,15 +69,18 @@ class LibreTransmitterSetupViewController: UINavigationController, CGMManagerOnb
             UserDefaults.standard.preSelectedDevice = newDevice
             SelectionState.shared.selectedUID = nil
             UserDefaults.standard.preSelectedUid = nil
+            
 
         } else if let newUID = SelectionState.shared.selectedUID {
             // this one is only temporary,
             // as we don't know the bluetooth identifier during nfc setup
             logger.debug("Setupcontroller will set new libre2 device to \(newUID.hex)")
+            
 
             UserDefaults.standard.preSelectedUid = newUID
             SelectionState.shared.selectedUID = nil
             UserDefaults.standard.preSelectedDevice = nil
+            
 
         } else {
 
