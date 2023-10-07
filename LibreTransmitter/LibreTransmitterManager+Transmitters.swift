@@ -221,6 +221,8 @@ extension LibreTransmitterManagerV3 {
             self.transmitterInfoObservable.connectionState = self.proxy?.connectionStateString ?? "n/a"
             self.transmitterInfoObservable.transmitterType = self.proxy?.shortTransmitterName ?? "Unknown"
         }
+        logDeviceCommunication("Sensor/Transmitter Device change state to: \(state.rawValue))", type: .connection)
+        
         
         if case .Connected = state {
             lastConnected = Date()
@@ -235,20 +237,19 @@ extension LibreTransmitterManagerV3 {
             // Incomplete package?
             // this would only happen if delegate is called manually with an unknown txFlags value
             // this was the case for readouts that were not yet complete
-            logger.debug("incomplete package or unknown response state")
+            logger.debug("Incomplete package or unknown response state")
             return
         }
 
         switch packet {
         case .newSensor:
-            logger.debug("new libresensor detected")
+            //we can't be sure of the activation datetime for the new sensor here
+            logger.debug("New libresensor detected")
             NotificationHelper.sendSensorChangeNotificationIfNeeded()
         case .noSensor:
-            logger.debug("no libresensor detected")
+            logDeviceCommunication("No sensor detected, verify that the transmitter is physically connected to the sensor")
+            logger.debug("No libresensor detected")
             NotificationHelper.sendSensorNotDetectedNotificationIfNeeded(noSensor: true)
-        case .frequencyChangedResponse:
-            logger.debug("transmitter readout interval has changed!")
-
         default:
             // we don't care about the rest!
             break
