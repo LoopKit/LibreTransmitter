@@ -130,6 +130,7 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
         bLogger.debug("bubbleRequestData")
         reset()
 
+        delegate?.libreDeviceLogMessage(payload: "Bubble Transmitter: requesting data transmission every five minutes:", type: .send)
         peripheral.writeValue(Data([0x00, 0x00, 0x05]), for: writeCharacteristics, type: .withResponse)
     }
     override func updateValueForNotifyCharacteristics(_ value: Data, peripheral: CBPeripheral, writeCharacteristic: CBCharacteristic?) {
@@ -148,7 +149,7 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
 
             bLogger.debug("Got bubbledevice: \(self.metadata.debugDescription)")
            if let writeCharacteristic {
-
+               delegate?.libreDeviceLogMessage(payload: "Bubble requesting data", type: .send)
                peripheral.writeValue(Data([0x02, 0x00, 0x00, 0x00, 0x00, 0x2B]), for: writeCharacteristic, type: .withResponse)
            }
         case .dataPacket:// , .decryptedDataPacket:
@@ -159,7 +160,7 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
                reset()
            }
         case .noSensor:
-            delegate?.libreTransmitterReceivedMessage(0x0000, txFlags: 0x34, payloadData: rxBuffer)
+            delegate?.libreDeviceTransceivedMessage(0x34, payloadData: rxBuffer)
 
             reset()
         case .serialNumber:

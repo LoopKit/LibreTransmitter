@@ -81,6 +81,8 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
         }
 
         logger.debug("Writing streaming unlock code to peripheral: \(unlock.hexEncodedString())")
+        
+        delegate?.libreDeviceLogMessage(payload: "Writing streaming unlock code to peripheral: \(unlock.hexEncodedString())", type: .send)
         peripheral.writeValue(unlock, for: writeCharacteristics, type: .withResponse)
 
     }

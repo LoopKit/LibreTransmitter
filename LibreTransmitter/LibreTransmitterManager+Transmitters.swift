@@ -216,7 +216,7 @@ extension LibreTransmitterManagerV3 {
     }
 
     // will be called on utility queue
-    public func libreTransmitterStateChanged(_ state: BluetoothmanagerState) {
+    public func libreDeviceStateChanged(_ state: BluetoothmanagerState) {
         DispatchQueue.main.async {
             self.transmitterInfoObservable.connectionState = self.proxy?.connectionStateString ?? "n/a"
             self.transmitterInfoObservable.transmitterType = self.proxy?.shortTransmitterName ?? "Unknown"
@@ -230,9 +230,14 @@ extension LibreTransmitterManagerV3 {
         
         return
     }
+    
+    public func libreDeviceLogMessage(payload: String, type: LoopKit.DeviceLogEntryType) {
+        logDeviceCommunication(payload, type: type)
+    }
 
     // will be called on utility queue
-    public func libreTransmitterReceivedMessage(_ messageIdentifier: UInt16, txFlags: UInt8, payloadData: Data) {
+    public func libreDeviceTransceivedMessage(_ txFlags: UInt8, payloadData: Data) {
+        
         guard let packet = MiaoMiaoResponseState(rawValue: txFlags) else {
             // Incomplete package?
             // this would only happen if delegate is called manually with an unknown txFlags value
@@ -247,7 +252,6 @@ extension LibreTransmitterManagerV3 {
             logger.debug("New libresensor detected")
             NotificationHelper.sendSensorChangeNotificationIfNeeded()
         case .noSensor:
-            logDeviceCommunication("No sensor detected, verify that the transmitter is physically connected to the sensor")
             logger.debug("No libresensor detected")
             NotificationHelper.sendSensorNotDetectedNotificationIfNeeded(noSensor: true)
         default:

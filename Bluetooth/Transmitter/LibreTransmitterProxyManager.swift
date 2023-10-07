@@ -11,6 +11,7 @@ import Foundation
 import HealthKit
 import os.log
 import UIKit
+import LoopKit
 
 public enum BluetoothmanagerState: String {
     case Unassigned = "Unassigned"
@@ -25,10 +26,13 @@ public enum BluetoothmanagerState: String {
     case UnknownDevice = "UnknownDevice"
 }
 
+
+
 public protocol LibreTransmitterDelegate: AnyObject {
     // Can happen on any queue
-    func libreTransmitterStateChanged(_ state: BluetoothmanagerState)
-    func libreTransmitterReceivedMessage(_ messageIdentifier: UInt16, txFlags: UInt8, payloadData: Data)
+    func libreDeviceStateChanged(_ state: BluetoothmanagerState)
+    func libreDeviceTransceivedMessage(_ txFlags: UInt8, payloadData: Data) // actionable
+    func libreDeviceLogMessage(payload: String, type: DeviceLogEntryType) //just log
     // Will always happen on managerQueue
     func libreTransmitterDidUpdate(with sensorData: SensorData, and Device: LibreTransmitterMetadata)
     func libreSensorDidUpdate(with bleData: Libre2.LibreBLEResponse, and Device: LibreTransmitterMetadata)
@@ -41,9 +45,12 @@ public protocol LibreTransmitterDelegate: AnyObject {
 extension LibreTransmitterDelegate {
     func noLibreTransmitterSelected() {}
     public func libreManagerDidRestoreState(found peripherals: [CBPeripheral], connected to: CBPeripheral?) {}
+
 }
 
 public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate, LibreTransmitterDelegate {
+   
+    
     public func libreSensorDidUpdate(with bleData: Libre2.LibreBLEResponse, and Device: LibreTransmitterMetadata) {
         dispatchToDelegate { manager in
             manager.delegate?.libreSensorDidUpdate(with: bleData, and: Device)
@@ -67,19 +74,26 @@ public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDeleg
         }
     }
 
-    public func libreTransmitterStateChanged(_ state: BluetoothmanagerState) {
+    public func libreDeviceStateChanged(_ state: BluetoothmanagerState) {
 
         logger.debug("libreTransmitterStateChanged delegating")
         dispatchToDelegate { manager in
-           manager.delegate?.libreTransmitterStateChanged(state)
+           manager.delegate?.libreDeviceStateChanged(state)
+        }
+    }
+    
+    public func libreDeviceLogMessage(payload: String, type: DeviceLogEntryType) {
+        logger.debug("libreDeviceLogMessage delegating")
+        dispatchToDelegate { manager in
+            manager.delegate?.libreDeviceLogMessage(payload: payload, type: type)
         }
     }
 
-    public func libreTransmitterReceivedMessage(_ messageIdentifier: UInt16, txFlags: UInt8, payloadData: Data) {
+    public func libreDeviceTransceivedMessage(_ txFlags: UInt8, payloadData: Data) {
 
         logger.debug("libreTransmitterReceivedMessage delegating")
         dispatchToDelegate { manager in
-            manager.delegate?.libreTransmitterReceivedMessage(messageIdentifier, txFlags: txFlags, payloadData: payloadData)
+            manager.delegate?.libreDeviceTransceivedMessage(txFlags, payloadData: payloadData)
         }
     }
 
@@ -144,7 +158,7 @@ public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDeleg
         didSet {
            dispatchToDelegate { manager in
                 // Help delegate initialize by sending current state directly after delegate assignment
-                manager.delegate?.libreTransmitterStateChanged(self.state)
+                manager.delegate?.libreDeviceStateChanged(self.state)
            }
         }
     }
@@ -153,7 +167,7 @@ public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDeleg
         didSet {
             dispatchToDelegate { manager in
                 // Help delegate initialize by sending current state directly after delegate assignment
-                manager.delegate?.libreTransmitterStateChanged(self.state)
+                manager.delegate?.libreDeviceStateChanged(self.state)
             }
         }
     }
