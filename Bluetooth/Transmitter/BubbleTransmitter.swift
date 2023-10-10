@@ -164,7 +164,7 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
                reset()
            }
         case .noSensor:
-            delegate?.libreDeviceTransceivedMessage(0x34, payloadData: rxBuffer)
+            delegate?.libreDeviceReceivedMessage(0x34, payloadData: rxBuffer)
 
             reset()
         case .serialNumber:

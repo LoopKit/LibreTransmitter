@@ -31,7 +31,7 @@ public enum BluetoothmanagerState: String {
 public protocol LibreTransmitterDelegate: AnyObject {
     // Can happen on any queue
     func libreDeviceStateChanged(_ state: BluetoothmanagerState)
-    func libreDeviceTransceivedMessage(_ txFlags: UInt8, payloadData: Data) // actionable
+    func libreDeviceReceivedMessage(_ txFlags: UInt8, payloadData: Data) // actionable
     func libreDeviceLogMessage(payload: String, type: DeviceLogEntryType) //just log
     // Will always happen on managerQueue
     func libreTransmitterDidUpdate(with sensorData: SensorData, and Device: LibreTransmitterMetadata)
@@ -89,11 +89,11 @@ public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDeleg
         }
     }
 
-    public func libreDeviceTransceivedMessage(_ txFlags: UInt8, payloadData: Data) {
+    public func libreDeviceReceivedMessage(_ txFlags: UInt8, payloadData: Data) {
 
         logger.debug("libreTransmitterReceivedMessage delegating")
         dispatchToDelegate { manager in
-            manager.delegate?.libreDeviceTransceivedMessage(txFlags, payloadData: payloadData)
+            manager.delegate?.libreDeviceReceivedMessage(txFlags, payloadData: payloadData)
         }
     }
 

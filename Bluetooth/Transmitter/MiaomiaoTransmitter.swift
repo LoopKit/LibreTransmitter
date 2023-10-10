@@ -262,25 +262,25 @@ class MiaoMiaoTransmitter: LibreTransmitterProxyProtocol {
 
             if rxBuffer.count >= 363 {
 
-                delegate?.libreDeviceTransceivedMessage(0x28, payloadData: rxBuffer)
+                delegate?.libreDeviceReceivedMessage(0x28, payloadData: rxBuffer)
 
                 handleCompleteMessage()
                 reset()
             }
 
         case .newSensor: // 0x32: // A new sensor has been detected -> acknowledge to use sensor and reset buffer
-            delegate?.libreDeviceTransceivedMessage(0x32, payloadData: rxBuffer)
+            delegate?.libreDeviceReceivedMessage(0x32, payloadData: rxBuffer)
 
             confirmSensor(peripheral: peripheral, writeCharacteristics: writeCharacteristic)
             reset()
         case .noSensor: // 0x34: // No sensor has been detected -> reset buffer (and wait for new data to arrive)
 
-            delegate?.libreDeviceTransceivedMessage(0x34, payloadData: rxBuffer)
+            delegate?.libreDeviceReceivedMessage(0x34, payloadData: rxBuffer)
 
             reset()
         case .frequencyChangedResponse: // 0xD1: // Success of fail for setting time intervall
 
-            delegate?.libreDeviceTransceivedMessage(0xD1, payloadData: rxBuffer)
+            delegate?.libreDeviceReceivedMessage(0xD1, payloadData: rxBuffer)
 
             if value.count >= 2 {
                 if value[2] == 0x01 {

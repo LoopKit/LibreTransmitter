@@ -236,7 +236,7 @@ extension LibreTransmitterManagerV3 {
     }
 
     // will be called on utility queue
-    public func libreDeviceTransceivedMessage(_ txFlags: UInt8, payloadData: Data) {
+    public func libreDeviceReceivedMessage(_ txFlags: UInt8, payloadData: Data) {
         
         guard let packet = MiaoMiaoResponseState(rawValue: txFlags) else {
             // Incomplete package?
