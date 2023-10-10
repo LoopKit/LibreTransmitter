@@ -233,8 +233,9 @@ class MiaoMiaoTransmitter: LibreTransmitterProxyProtocol {
         reset()
         logger.debug("miaomiaoRequestData")
 
-        delegate?.libreDeviceLogMessage(payload: "Miaomaio requesting data", type: .send)
-        peripheral.writeValue(Data([0xF0]), for: writeCharacteristics, type: .withResponse)
+        let data = Data([0xF0])
+        delegate?.libreDeviceLogMessage(payload: "Miaomaio requesting data: \(data.toDebugString())", type: .send)
+        peripheral.writeValue(data, for: writeCharacteristics, type: .withResponse)
     }
 
     func updateValueForNotifyCharacteristics(_ value: Data, peripheral: CBPeripheral, writeCharacteristic: CBCharacteristic?) {
@@ -333,7 +334,8 @@ class MiaoMiaoTransmitter: LibreTransmitterProxyProtocol {
             return
         }
         logger.debug("confirming new sensor")
-        delegate?.libreDeviceLogMessage(payload: "Miaomiao auto confirming new sensor", type: .send)
-        peripheral.writeValue(Data([0xD3, 0x01]), for: writeCharacteristics, type: .withResponse)
+        let data = Data([0xD3, 0x01])
+        delegate?.libreDeviceLogMessage(payload: "Miaomiao auto confirming new sensor: \(data)", type: .send)
+        peripheral.writeValue(data, for: writeCharacteristics, type: .withResponse)
     }
 }

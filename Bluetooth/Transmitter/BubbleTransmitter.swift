@@ -130,8 +130,9 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
         bLogger.debug("bubbleRequestData")
         reset()
 
-        delegate?.libreDeviceLogMessage(payload: "Bubble Transmitter: requesting data transmission every five minutes:", type: .send)
-        peripheral.writeValue(Data([0x00, 0x00, 0x05]), for: writeCharacteristics, type: .withResponse)
+        let data = Data([0x00, 0x00, 0x05])
+        delegate?.libreDeviceLogMessage(payload: "Bubble Transmitter: requesting data transmission every five minutes: \(data.toDebugString())", type: .send)
+        peripheral.writeValue(data, for: writeCharacteristics, type: .withResponse)
     }
     override func updateValueForNotifyCharacteristics(_ value: Data, peripheral: CBPeripheral, writeCharacteristic: CBCharacteristic?) {
         bLogger.debug("bubbleDidUpdateValueForNotifyCharacteristics, firstbyte is: \(value.first.debugDescription)")
@@ -151,8 +152,9 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
 
             bLogger.debug("Got bubbledevice: \(self.metadata.debugDescription)")
            if let writeCharacteristic {
-               delegate?.libreDeviceLogMessage(payload: "Bubble requesting datapacket", type: .send)
-               peripheral.writeValue(Data([0x02, 0x00, 0x00, 0x00, 0x00, 0x2B]), for: writeCharacteristic, type: .withResponse)
+               let data = Data([0x02, 0x00, 0x00, 0x00, 0x00, 0x2B])
+               delegate?.libreDeviceLogMessage(payload: "Bubble requesting datapacket: \(data.toDebugString())", type: .send)
+               peripheral.writeValue(data, for: writeCharacteristic, type: .withResponse)
            }
         case .dataPacket:// , .decryptedDataPacket:
            rxBuffer.append(value.suffix(from: 4))
