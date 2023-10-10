@@ -253,6 +253,8 @@ class MiaoMiaoTransmitter: LibreTransmitterProxyProtocol {
             logger.error("miaomiaoDidUpdateValueForNotifyCharacteristics did not undestand what to do (internal error")
             return
         }
+        
+        delegate?.libreDeviceLogMessage(payload: "miaomiao received value: \(value.toDebugString())", type: .receive)
 
         switch miaoMiaoResponseState {
         case .dataPacketReceived: // 0x28: // data received, append to buffer and inform delegate if end reached

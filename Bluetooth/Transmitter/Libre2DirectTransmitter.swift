@@ -66,6 +66,8 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
         rxBuffer.append(value)
 
         logger.debug("libre2 direct Appended value with length  \(String(describing: value.count)), buffer length is: \(String(describing: self.rxBuffer.count))")
+        
+        delegate?.libreDeviceLogMessage(payload: "libre2direct received value: \(value.toDebugString())", type: .receive)
 
         if rxBuffer.count == expectedBufferSize {
             handleCompleteMessage()

@@ -140,6 +140,8 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
         }
         bLogger.debug("bubble responsestate is of type \(bubbleResponseState.description)")
         bLogger.debug("bubble value is: \(value.toDebugString())")
+        delegate?.libreDeviceLogMessage(payload: "Bubble received value: \(value.toDebugString())", type: .receive)
+        
         switch bubbleResponseState {
         case .bubbleInfo:
             // let hardware = value[value.count-2].description + "." + value[value.count-1].description
@@ -149,7 +151,7 @@ class BubbleTransmitter: MiaoMiaoTransmitter {
 
             bLogger.debug("Got bubbledevice: \(self.metadata.debugDescription)")
            if let writeCharacteristic {
-               delegate?.libreDeviceLogMessage(payload: "Bubble requesting data", type: .send)
+               delegate?.libreDeviceLogMessage(payload: "Bubble requesting datapacket", type: .send)
                peripheral.writeValue(Data([0x02, 0x00, 0x00, 0x00, 0x00, 0x2B]), for: writeCharacteristic, type: .withResponse)
            }
         case .dataPacket:// , .decryptedDataPacket:

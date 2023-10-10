@@ -42,6 +42,7 @@ public enum NotificationHelper {
         guard times >= 0 else {
             return
         }
+        
 
         AudioServicesPlaySystemSoundWithCompletion(kSystemSoundID_Vibrate) {
             vibrate(times: times - 1)
