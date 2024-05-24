@@ -22,6 +22,8 @@ class LibreDemoCGMManager: LibreTransmitterManagerV3 {
 
 
     override var localizedTitle: String { "Libre Demo" }
+    
+    public var autoStartTrace: Bool = false
 
     public var managerIdentifier: String {
         "LibreDemoCGMManager"
