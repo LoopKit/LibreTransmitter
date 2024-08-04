@@ -341,7 +341,7 @@ public extension NotificationHelper {
 
         let shouldSendGlucoseAlternatingTimes = glucoseNotifyCalledCount != 0 && UserDefaults.standard.mmNotifyEveryXTimes != 0
 
-        let shouldSend = UserDefaults.standard.mmAlwaysDisplayGlucose || glucoseNotifyCalledCount == 1 ||
+        let shouldSend = UserDefaults.standard.mmAlwaysDisplayGlucose ||
             (shouldSendGlucoseAlternatingTimes && glucoseNotifyCalledCount % UserDefaults.standard.mmNotifyEveryXTimes == 0)
 
         let schedules = UserDefaults.standard.glucoseSchedules
