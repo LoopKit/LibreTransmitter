@@ -9,7 +9,7 @@
 import SwiftUI
 
 import LibreTransmitter
-import HealthKit
+import LoopAlgorithm
 import LoopKit
 import LoopKitUI
 import UniformTypeIdentifiers
@@ -102,7 +102,7 @@ struct SettingsView: View {
         self.bluetoothSearcher = bluetoothSearcher
     }
 
-    private var glucoseUnit: HKUnit {
+    private var glucoseUnit: LoopUnit {
         displayGlucosePreference.unit
     }
 

@@ -52,7 +52,7 @@ extension LibreGlucose: GlucoseValue {
         timestamp
     }
 
-    public var quantity: HKQuantity {
+    public var quantity: LoopQuantity {
         .init(unit: .milligramsPerDeciliter, doubleValue: glucoseDouble)
     }
 }

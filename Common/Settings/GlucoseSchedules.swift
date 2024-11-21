@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import HealthKit
-// import MiaomiaoClient
+import LoopAlgorithm
+
 public enum GlucoseScheduleAlarmResult: Int, CaseIterable {
     case none = 0
     case low
@@ -175,8 +175,8 @@ class GlucoseSchedule: Codable, CustomStringConvertible {
     }
     // stores the alarm. It does not synhronize the value with the underlaying userdefaults
     // that is up to the caller of this class
-    public func storeLowAlarm(forUnit unit: HKUnit, lowAlarm: Double) {
-        if unit == HKUnit.millimolesPerLiter {
+    public func storeLowAlarm(forUnit unit: LoopUnit, lowAlarm: Double) {
+        if unit == LoopUnit.millimolesPerLiter {
             self.lowAlarm = lowAlarm * 18
             return
         }
@@ -184,9 +184,9 @@ class GlucoseSchedule: Codable, CustomStringConvertible {
         self.lowAlarm = lowAlarm
     }
 
-    public func retrieveLowAlarm(forUnit unit: HKUnit) -> Double? {
+    public func retrieveLowAlarm(forUnit unit: LoopUnit) -> Double? {
         if let lowAlarm = self.lowAlarm {
-            if unit == HKUnit.millimolesPerLiter {
+            if unit == LoopUnit.millimolesPerLiter {
                 return (lowAlarm / 18).roundTo(places: 1)
             } else {
                 return lowAlarm
@@ -198,17 +198,17 @@ class GlucoseSchedule: Codable, CustomStringConvertible {
 
     // stores the alarm. It does not synhronize the value with the underlaying userdefaults
     // that is up to the caller of this class
-    public func storeHighAlarm(forUnit unit: HKUnit, highAlarm: Double) {
-        if unit == HKUnit.millimolesPerLiter {
+    public func storeHighAlarm(forUnit unit: LoopUnit, highAlarm: Double) {
+        if unit == .millimolesPerLiter {
             self.highAlarm = highAlarm * 18
             return
         }
 
         self.highAlarm = highAlarm
     }
-    public func retrieveHighAlarm(forUnit unit: HKUnit) -> Double? {
+    public func retrieveHighAlarm(forUnit unit: LoopUnit) -> Double? {
         if let highAlarm = self.highAlarm {
-            if unit == HKUnit.millimolesPerLiter {
+            if unit == .millimolesPerLiter {
                 return (highAlarm / 18).roundTo(places: 1)
             }
             return highAlarm

@@ -9,7 +9,7 @@
 import SwiftUI
 import Combine
 import LibreTransmitter
-import HealthKit
+import LoopAlgorithm
 import LoopKitUI
 
 struct NotificationSettingsView: View {
@@ -17,7 +17,7 @@ struct NotificationSettingsView: View {
 
     @State private var presentableStatus: StatusMessage?
 
-    private let glucoseSegments = [HKUnit.millimolesPerLiter, HKUnit.milligramsPerDeciliter]
+    private let glucoseSegments = [LoopUnit.millimolesPerLiter, LoopUnit.milligramsPerDeciliter]
     private lazy var glucoseSegmentStrings = self.glucoseSegments.map({ $0.localizedShortUnitString })
 
     private enum Key: String {

@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import LoopAlgorithm
 import LoopKit
 import LoopKitUI
 import UIKit
@@ -498,7 +499,7 @@ extension LibreTransmitterManagerV3 {
 
 
 extension LibreTransmitterManagerV3: DisplayGlucoseUnitObserver {
-    public func unitDidChange(to displayGlucoseUnit: HKUnit) {
+    public func unitDidChange(to displayGlucoseUnit: LoopUnit) {
         self.alertsUnitPreference.unitDidChange(to: displayGlucoseUnit)
     }
 }
