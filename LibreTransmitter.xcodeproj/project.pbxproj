@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 53;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -133,7 +133,6 @@
 		C1C318D52A47638E00C6F29F /* FakeSensorPairingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2709A6F229E5E0D3004355A3 /* FakeSensorPairingData.swift */; };
 		C1C318D62A47638E00C6F29F /* MockBluetoothSearcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C318CF2A4748A100C6F29F /* MockBluetoothSearcher.swift */; };
 		C1C318D72A47638E00C6F29F /* MockSensorPairingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BDBAFE2A44FFD800A787D1 /* MockSensorPairingService.swift */; };
-		C1C318D92A478E0000C6F29F /* HKUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C318D82A478E0000C6F29F /* HKUnit.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -343,7 +342,6 @@
 		C1BDBAFD2A43992A00A787D1 /* LibreDemoCGMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibreDemoCGMManager.swift; sourceTree = "<group>"; };
 		C1BDBAFE2A44FFD800A787D1 /* MockSensorPairingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSensorPairingService.swift; sourceTree = "<group>"; };
 		C1C318CF2A4748A100C6F29F /* MockBluetoothSearcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBluetoothSearcher.swift; sourceTree = "<group>"; };
-		C1C318D82A478E0000C6F29F /* HKUnit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HKUnit.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -698,7 +696,6 @@
 		C1AF1D132A4BC22A00F46A26 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
-				C1C318D82A478E0000C6F29F /* HKUnit.swift */,
 				C1AF1D142A4BC23D00F46A26 /* TimeInterval.swift */,
 			);
 			path = Extensions;
@@ -1076,7 +1073,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C318D92A478E0000C6F29F /* HKUnit.swift in Sources */,
 				C1AF1D152A4BC23D00F46A26 /* TimeInterval.swift in Sources */,
 				C1BDBAED2A4397E200A787D1 /* OSLog.swift in Sources */,
 				C1BDBB002A45051B00A787D1 /* LibreDemoPlugin.swift in Sources */,

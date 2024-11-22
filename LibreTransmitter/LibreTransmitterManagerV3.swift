@@ -13,7 +13,6 @@ import UserNotifications
 import Combine
 
 import CoreBluetooth
-import HealthKit
 import os.log
 
 open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {

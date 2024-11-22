@@ -4,7 +4,6 @@
 //
 
 import Foundation
-import HealthKit
 import LoopKit
 import os.log
 import LoopAlgorithm

@@ -9,7 +9,6 @@
 import SwiftUI
 import Combine
 import LibreTransmitter
-import HealthKit
 
 struct GlucoseSettingsView: View {
 
