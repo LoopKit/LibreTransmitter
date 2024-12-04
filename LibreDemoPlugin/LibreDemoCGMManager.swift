@@ -7,11 +7,12 @@
 //
 
 import Foundation
+import HealthKit
 import LibreTransmitter
 import LibreTransmitterUI
 import LoopKit
 import LoopKitUI
-import HealthKit
+import LoopAlgorithm
 import os.log
 import LoopTestingKit
 
@@ -62,7 +63,7 @@ class LibreDemoCGMManager: LibreTransmitterManagerV3 {
     private func reportMockSample() {
         let date = Date()
         let value = 110.0 + sin(date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 3600 * 5) / (3600*5) * Double.pi * 2) * 60
-        let quantity = HKQuantity(unit: .milligramsPerDeciliter, doubleValue: value)
+        let quantity = LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: value)
         let newSample = NewGlucoseSample(
             date: date,
             quantity: quantity,

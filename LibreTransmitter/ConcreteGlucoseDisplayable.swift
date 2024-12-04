@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import HealthKit
+import LoopAlgorithm
 import LoopKit
 
 public struct ConcreteGlucoseDisplayable: GlucoseDisplayable {
@@ -21,5 +21,5 @@ public struct ConcreteGlucoseDisplayable: GlucoseDisplayable {
 
     // public var batteries : [(name: String, percentage: Int)]?
 
-    public var trendRate: HKQuantity? { nil }
+    public var trendRate: LoopQuantity? { nil }
 }

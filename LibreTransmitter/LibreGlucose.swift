@@ -4,7 +4,6 @@
 //
 
 import Foundation
-import HealthKit
 import LoopKit
 import os.log
 import LoopAlgorithm
@@ -52,7 +51,7 @@ extension LibreGlucose: GlucoseValue {
         timestamp
     }
 
-    public var quantity: HKQuantity {
+    public var quantity: LoopQuantity {
         .init(unit: .milligramsPerDeciliter, doubleValue: glucoseDouble)
     }
 }

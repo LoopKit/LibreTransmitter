@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import LoopAlgorithm
 import LoopKit
 import LoopKitUI
 import UIKit
@@ -12,7 +13,6 @@ import UserNotifications
 import Combine
 
 import CoreBluetooth
-import HealthKit
 import os.log
 
 open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
@@ -498,7 +498,7 @@ extension LibreTransmitterManagerV3 {
 
 
 extension LibreTransmitterManagerV3: DisplayGlucoseUnitObserver {
-    public func unitDidChange(to displayGlucoseUnit: HKUnit) {
+    public func unitDidChange(to displayGlucoseUnit: LoopUnit) {
         self.alertsUnitPreference.unitDidChange(to: displayGlucoseUnit)
     }
 }

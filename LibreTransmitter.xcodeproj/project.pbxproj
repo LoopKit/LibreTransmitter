@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 53;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -53,8 +53,6 @@
 		27850CFA25672C0C0020D109 /* UIApplication+metadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850CE325672C0C0020D109 /* UIApplication+metadata.swift */; };
 		27850CFB25672C0C0020D109 /* GlucoseSchedules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850CE425672C0C0020D109 /* GlucoseSchedules.swift */; };
 		27850CFC25672C0C0020D109 /* GlucoseSchedules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850CE425672C0C0020D109 /* GlucoseSchedules.swift */; };
-		27850CFD25672C0C0020D109 /* HKUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850CE525672C0C0020D109 /* HKUnit.swift */; };
-		27850CFE25672C0C0020D109 /* HKUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850CE525672C0C0020D109 /* HKUnit.swift */; };
 		27850D0E25672CA60020D109 /* ConcreteGlucoseDisplayable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850D0B25672CA60020D109 /* ConcreteGlucoseDisplayable.swift */; };
 		27850D1025672CA60020D109 /* LibreGlucose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850D0C25672CA60020D109 /* LibreGlucose.swift */; };
 		27850D1225672CA60020D109 /* NotificationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850D0D25672CA60020D109 /* NotificationHelper.swift */; };
@@ -133,7 +131,6 @@
 		C1C318D52A47638E00C6F29F /* FakeSensorPairingData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2709A6F229E5E0D3004355A3 /* FakeSensorPairingData.swift */; };
 		C1C318D62A47638E00C6F29F /* MockBluetoothSearcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C318CF2A4748A100C6F29F /* MockBluetoothSearcher.swift */; };
 		C1C318D72A47638E00C6F29F /* MockSensorPairingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BDBAFE2A44FFD800A787D1 /* MockSensorPairingService.swift */; };
-		C1C318D92A478E0000C6F29F /* HKUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C318D82A478E0000C6F29F /* HKUnit.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -255,7 +252,6 @@
 		27850CE225672C0C0020D109 /* UserDefaults+Bluetooth.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UserDefaults+Bluetooth.swift"; sourceTree = "<group>"; };
 		27850CE325672C0C0020D109 /* UIApplication+metadata.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIApplication+metadata.swift"; sourceTree = "<group>"; };
 		27850CE425672C0C0020D109 /* GlucoseSchedules.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GlucoseSchedules.swift; sourceTree = "<group>"; };
-		27850CE525672C0C0020D109 /* HKUnit.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HKUnit.swift; sourceTree = "<group>"; };
 		27850D0B25672CA60020D109 /* ConcreteGlucoseDisplayable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConcreteGlucoseDisplayable.swift; sourceTree = "<group>"; };
 		27850D0C25672CA60020D109 /* LibreGlucose.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibreGlucose.swift; sourceTree = "<group>"; };
 		27850D0D25672CA60020D109 /* NotificationHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NotificationHelper.swift; sourceTree = "<group>"; };
@@ -343,7 +339,6 @@
 		C1BDBAFD2A43992A00A787D1 /* LibreDemoCGMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibreDemoCGMManager.swift; sourceTree = "<group>"; };
 		C1BDBAFE2A44FFD800A787D1 /* MockSensorPairingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSensorPairingService.swift; sourceTree = "<group>"; };
 		C1C318CF2A4748A100C6F29F /* MockBluetoothSearcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBluetoothSearcher.swift; sourceTree = "<group>"; };
-		C1C318D82A478E0000C6F29F /* HKUnit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HKUnit.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -678,7 +673,6 @@
 			isa = PBXGroup;
 			children = (
 				27850CD825672C0C0020D109 /* Extensions */,
-				27850CE525672C0C0020D109 /* HKUnit.swift */,
 				27850CDE25672C0C0020D109 /* LocalizedString.swift */,
 				27850CDF25672C0C0020D109 /* Settings */,
 			);
@@ -698,7 +692,6 @@
 		C1AF1D132A4BC22A00F46A26 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
-				C1C318D82A478E0000C6F29F /* HKUnit.swift */,
 				C1AF1D142A4BC23D00F46A26 /* TimeInterval.swift */,
 			);
 			path = Extensions;
@@ -1016,7 +1009,6 @@
 				27850DCF25672F780020D109 /* CRC.swift in Sources */,
 				2764E86126FC6DC10016A585 /* Features.swift in Sources */,
 				27ED67B82698EF38003E5DAB /* AlarmStatus.swift in Sources */,
-				27850CFD25672C0C0020D109 /* HKUnit.swift in Sources */,
 				27850CF925672C0C0020D109 /* UIApplication+metadata.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1028,7 +1020,6 @@
 				274E71D52986D4A600FCFECD /* CriticalAlarmsVolumeView.swift in Sources */,
 				2746C74226DD0F8800E31BD9 /* Libre2DirectSetup.swift in Sources */,
 				27ED67BA26990D6B003E5DAB /* GenericObservableObject.swift in Sources */,
-				27850CFE25672C0C0020D109 /* HKUnit.swift in Sources */,
 				27850D4E25672DFB0020D109 /* LibreTransmitterSetupViewController.swift in Sources */,
 				276EF5F22652F84F00571021 /* HashableClass.swift in Sources */,
 				27850CF825672C0C0020D109 /* UserDefaults+Bluetooth.swift in Sources */,
@@ -1076,7 +1067,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C1C318D92A478E0000C6F29F /* HKUnit.swift in Sources */,
 				C1AF1D152A4BC23D00F46A26 /* TimeInterval.swift in Sources */,
 				C1BDBAED2A4397E200A787D1 /* OSLog.swift in Sources */,
 				C1BDBB002A45051B00A787D1 /* LibreDemoPlugin.swift in Sources */,

@@ -8,7 +8,7 @@
 
 import AudioToolbox
 import Foundation
-import HealthKit
+import LoopAlgorithm
 import LoopKit
 import UserNotifications
 import os.log
@@ -48,8 +48,8 @@ public enum NotificationHelper {
         }
     }
 
-    public static func GlucoseUnitIsSupported(unit: HKUnit) -> Bool {
-        [HKUnit.milligramsPerDeciliter, HKUnit.millimolesPerLiter].contains(unit)
+    public static func GlucoseUnitIsSupported(unit: LoopUnit) -> Bool {
+        [LoopUnit.milligramsPerDeciliter, LoopUnit.millimolesPerLiter].contains(unit)
     }
 
     private static func requestCriticalNotificationPermissions() {
@@ -411,7 +411,7 @@ public extension NotificationHelper {
             if diff >= 0 {
                 body.append("+")
             }
-            body.append( glucoseFormatter.string(from: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: diff))!)
+            body.append( glucoseFormatter.string(from: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: diff))!)
         }
 
         if let trend = trend?.localizedDescription {

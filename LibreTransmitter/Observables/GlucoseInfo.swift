@@ -7,16 +7,16 @@
 //
 
 import Foundation
-import HealthKit
+import LoopAlgorithm
 
 public class GlucoseInfo: ObservableObject, Equatable, Hashable {
 
-    @Published public var glucose: HKQuantity?
+    @Published public var glucose: LoopQuantity?
     @Published public var date: Date?
     @Published public var checksum = ""
     // @Published var entryErrors = ""
 
-    @Published public var prediction: HKQuantity?
+    @Published public var prediction: LoopQuantity?
     @Published public var predictionDate: Date?
 
     public static func ==(lhs: GlucoseInfo, rhs: GlucoseInfo) -> Bool {
