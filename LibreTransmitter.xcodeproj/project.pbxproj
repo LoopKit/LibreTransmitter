@@ -100,6 +100,7 @@
 		27F93B2C2816B93900EE39A7 /* LibreTransmitterManager+Transmitters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F93B2B2816B93900EE39A7 /* LibreTransmitterManager+Transmitters.swift */; };
 		27FED6CC26C275A8001BD5E4 /* ic_bubble_mini_3-2.png in Resources */ = {isa = PBXBuildFile; fileRef = 27FED6CB26C275A8001BD5E4 /* ic_bubble_mini_3-2.png */; };
 		27FED6CD26C275A8001BD5E4 /* ic_bubble_mini_3-2.png in Resources */ = {isa = PBXBuildFile; fileRef = 27FED6CB26C275A8001BD5E4 /* ic_bubble_mini_3-2.png */; };
+		3B0FD2AA2D803C6100E5E921 /* LoopKitUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B0FD2A92D803C6100E5E921 /* LoopKitUI.framework */; };
 		432B0E8C1CDFC3C50045347B /* LibreTransmitter.h in Headers */ = {isa = PBXBuildFile; fileRef = 432B0E8B1CDFC3C50045347B /* LibreTransmitter.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		43A8EC7C210E661400A81379 /* LoopKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 43A8EC7B210E661400A81379 /* LoopKit.framework */; };
 		43A8EC86210E664300A81379 /* LibreTransmitterUI.h in Headers */ = {isa = PBXBuildFile; fileRef = 43A8EC84210E664300A81379 /* LibreTransmitterUI.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -279,6 +280,7 @@
 		27F93B292816B7FF00EE39A7 /* LibreTransmitterManager+Libre2EU.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibreTransmitterManager+Libre2EU.swift"; sourceTree = "<group>"; };
 		27F93B2B2816B93900EE39A7 /* LibreTransmitterManager+Transmitters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibreTransmitterManager+Transmitters.swift"; sourceTree = "<group>"; };
 		27FED6CB26C275A8001BD5E4 /* ic_bubble_mini_3-2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "ic_bubble_mini_3-2.png"; sourceTree = "<group>"; };
+		3B0FD2A92D803C6100E5E921 /* LoopKitUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = LoopKitUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		432B0E881CDFC3C50045347B /* LibreTransmitter.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LibreTransmitter.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		432B0E8B1CDFC3C50045347B /* LibreTransmitter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LibreTransmitter.h; sourceTree = "<group>"; };
 		432B0E8D1CDFC3C50045347B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -350,6 +352,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3B0FD2AA2D803C6100E5E921 /* LoopKitUI.framework in Frameworks */,
 				43A8EC95210E67B000A81379 /* HealthKit.framework in Frameworks */,
 				43A8EC7C210E661400A81379 /* LoopKit.framework in Frameworks */,
 			);
@@ -651,6 +654,7 @@
 		43A8EC7A210E661300A81379 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				3B0FD2A92D803C6100E5E921 /* LoopKitUI.framework */,
 				43A8EC94210E67B000A81379 /* HealthKit.framework */,
 				A9ED4DAE225EB9390080DEBA /* HealthKit.framework */,
 				43A8EC8B210E665600A81379 /* LoopKitUI.framework */,
