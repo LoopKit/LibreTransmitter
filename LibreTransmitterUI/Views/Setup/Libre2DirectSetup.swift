@@ -73,7 +73,7 @@ struct Libre2DirectSetup: View {
 
         let max = info.sensorData?.maxMinutesWearTime ?? 0
 
-        let sensor = Sensor(uuid: info.uuid, patchInfo: info.patchInfo, maxAge: max, sensorName: info.sensorName)
+        let sensor = Sensor(uuid: info.uuid, patchInfo: info.patchInfo, maxAge: max, sensorName: info.sensorName, macAddress: info.macAddress)
         UserDefaults.standard.preSelectedSensor = sensor
 
         SelectionState.shared.selectedUID = pairingInfo.uuid
