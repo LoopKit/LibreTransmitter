@@ -143,7 +143,7 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
 
             metadata = LibreTransmitterMetadata(hardware: nil, firmware: nil, battery: 100,
                                                 name: Self.shortTransmitterName,
-                                                macAddress: nil,
+                                                macAddress: sensor.macAddress,
                                                 patchInfo: sensor.patchInfo,
                                                 uid: [UInt8](sensor.uuid))
 

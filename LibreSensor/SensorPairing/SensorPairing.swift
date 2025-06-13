@@ -15,9 +15,10 @@ public class SensorPairingInfo: ObservableObject, Codable {
     @Published public var streamingEnabled: Bool
 
     @Published public var sensorName : String? = nil
+    @Published public var macAddress : String? = nil
     
     enum CodingKeys: CodingKey {
-        case uuid, patchInfo, fram, streamingEnabled, sensorName
+        case uuid, patchInfo, fram, streamingEnabled, sensorName, macAddress
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -27,6 +28,7 @@ public class SensorPairingInfo: ObservableObject, Codable {
         try container.encode(fram, forKey: .fram)
         try container.encode(streamingEnabled, forKey: .streamingEnabled)
         try container.encode(sensorName, forKey: .sensorName)
+        try container.encode(macAddress, forKey: .macAddress)
 
        
     }
@@ -39,15 +41,17 @@ public class SensorPairingInfo: ObservableObject, Codable {
         fram = try container.decode(Data.self, forKey: .fram)
         streamingEnabled = try container.decode(Bool.self, forKey: .streamingEnabled)
         sensorName = try container.decode(String?.self, forKey: .sensorName)
+        macAddress = try container.decode(String?.self, forKey: .macAddress)
     }
     
 
-    public init(uuid: Data=Data(), patchInfo: Data=Data(), fram: Data=Data(), streamingEnabled: Bool = false, sensorName: String? = nil ) {
+    public init(uuid: Data=Data(), patchInfo: Data=Data(), fram: Data=Data(), streamingEnabled: Bool = false, sensorName: String? = nil, macAddress: String? = nil ) {
         self.uuid = uuid
         self.patchInfo = patchInfo
         self.fram = fram
         self.streamingEnabled = streamingEnabled
         self.sensorName = sensorName
+        self.macAddress = macAddress
     }
 
     public var sensorData: SensorData? {

@@ -37,7 +37,8 @@ public protocol LibreTransmitterProxyProtocol: AnyObject {
 
 extension LibreTransmitterProxyProtocol {
     func canSupportPeripheral(_ peripheral: PeripheralProtocol) -> Bool {
-        Self.canSupportPeripheral(peripheral)
+        print("canSupportPeripheral called")
+        return Self.canSupportPeripheral(peripheral)
     }
     public var staticType: LibreTransmitterProxyProtocol.Type {
         Self.self
