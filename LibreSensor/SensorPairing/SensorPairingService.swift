@@ -169,7 +169,7 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
 
                                     tag.customCommand(requestFlags: .highDataRate, customCommandCode: Int(cmd.code), customRequestParameters: cmd.parameters) { response, _ in
                                         var streamingEnabled = false
-                                        var macAddress = ""
+                                        var macAddress : String?
 
                                         if subCmd == .enableStreaming && response.count == 6 {
                                             streamingEnabled = true
