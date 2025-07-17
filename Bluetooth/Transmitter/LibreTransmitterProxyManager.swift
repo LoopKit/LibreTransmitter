@@ -489,18 +489,19 @@ public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDeleg
              let sensor = UserDefaults.standard.preSelectedSensor
              logger.debug("preselected sensor is: \(String(describing:sensor))")
              
-             let verified : Bool
+             var verified = false
              
              // Starting in mid 2025, libre2 plus sensors in europe identify them self with
              // their mac address in the device name
              if let peripheralName = peripheral.name, let preselectedMac = sensor?.macAddress  {
                  verified = peripheralName == preselectedMac
                  logger.debug("Verifiying libre2 connection using mac address method:. \(verified)")
-             } else {
+             }
+             
+             if !verified {
                  verified = verifyLibre2ManufacturerData(peripheral: peripheral, selectedUid: selectedUid, advertisementData: advertisementData)
                  logger.debug("Verifiying libre2 connection using legacy manufacturerData method: \(verified)")
                      
-                 
              }
              
              if !verified {
