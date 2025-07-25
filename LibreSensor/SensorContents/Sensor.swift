@@ -80,66 +80,23 @@ public struct CalibrationToSensorMapping: Codable {
 public struct Sensor: Codable {
     public let uuid: Data
     public let patchInfo: Data
-   // public let calibrationInfo: SensorData.CalibrationInfo
 
-    // public let family: SensorFamily
-    // public let type: SensorType
-    // public let region: SensorRegion
-    // public let serial: String?
-    // public var state: SensorState
     public var age: Int?
     public var maxAge: Int
-   // public var lifetime: Int
 
     public var unlockCount: Int
     
     var sensorName : String?
+    var macAddress : String?
 
-    /*
-    public var unlockCount: Int {
-        get {
-            return UserDefaults.standard.integer(forKey: Key.sensorUnlockCount.rawValue)
-        }
-        set {
-            UserDefaults.standard.setValue(newValue, forKey: Key.sensorUnlockCount.rawValue)
-        }
-    }*/
-
-    /*
-    public var elapsedLifetime: Int? {
-        get {
-            if let remainingLifetime {
-                return max(0, lifetime - remainingLifetime)
-            }
-
-            return nil
-        }
-    }
-
-    public var remainingLifetime: Int? {
-        get {
-            if let age {
-                return max(0, lifetime - age)
-            }
-
-            return nil
-        }
-    } */
-
-    public init(uuid: Data, patchInfo: Data, maxAge: Int, unlockCount: Int = 0, sensorName: String? = nil) {
+    public init(uuid: Data, patchInfo: Data, maxAge: Int, unlockCount: Int = 0, sensorName: String? = nil, macAddress: String? = nil) {
         self.uuid = uuid
         self.patchInfo = patchInfo
-
-        // self.family = SensorFamily(patchInfo: patchInfo)
-        // self.type = SensorType(patchInfo: patchInfo)
-        // self.region = SensorRegion(patchInfo: patchInfo)
-        // self.serial = sensorSerialNumber(sensorUID: self.uuid, sensorFamily: self.family)
-        // self.state = SensorState(fram: fram)
-        // self.lifetime = Int(fram[327]) << 8 + Int(fram[326])
         self.unlockCount = 0
         self.maxAge = maxAge
         // self.calibrationInfo = calibrationInfo
         self.sensorName = sensorName
+        self.macAddress = macAddress
     }
 
     public var description: String {

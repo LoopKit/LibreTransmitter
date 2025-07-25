@@ -169,9 +169,11 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
 
                                     tag.customCommand(requestFlags: .highDataRate, customCommandCode: Int(cmd.code), customRequestParameters: cmd.parameters) { response, _ in
                                         var streamingEnabled = false
+                                        var macAddress : String?
 
                                         if subCmd == .enableStreaming && response.count == 6 {
                                             streamingEnabled = true
+                                            macAddress = Data(response.reversed()).hexEncodedString().uppercased()
                                         }
 
                                         
@@ -179,7 +181,7 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
                                         let patchHex = patchInfo.hexEncodedString()
                                         let sensorType = SensorType(patchInfo: patchInfo)
 
-                                        print("got patchhex: \(patchHex) and sensorType: \(sensorType)")
+                                        print("got patchhex: \(patchHex) and sensorType: \(sensorType), with mac address: \(macAddress)")
 
                                         guard sensorUID.count == 8 && patchInfo.count == 6 && fram.count == 344 else {
                                             // self.readingsSubject.send(completion: .failure(LibreError.noSensorData))
@@ -199,7 +201,7 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
                                         do {
                                             let decryptedBytes = try Libre2.decryptFRAM(type: sensorType, id: [UInt8](sensorUID), info: patchInfo, data: [UInt8](fram))
 
-                                            self.sendUpdate(SensorPairingInfo(uuid: sensorUID, patchInfo: patchInfo, fram: Data(decryptedBytes), streamingEnabled: streamingEnabled))
+                                            self.sendUpdate(SensorPairingInfo(uuid: sensorUID, patchInfo: patchInfo, fram: Data(decryptedBytes), streamingEnabled: streamingEnabled, macAddress: macAddress))
                                             session.invalidate()
                                             return
                                         } catch {

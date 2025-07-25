@@ -448,6 +448,7 @@ public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDeleg
         }
     }
     
+   
     private func verifyLibre2ManufacturerData(peripheral: CBPeripheral, selectedUid: Data ,advertisementData: [String: Any]) -> Bool {
         guard let manufacturerData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data else {
             logger.debug("manufacturerData was not retrieved")
@@ -488,9 +489,23 @@ public final class LibreTransmitterProxyManager: NSObject, CBCentralManagerDeleg
              let sensor = UserDefaults.standard.preSelectedSensor
              logger.debug("preselected sensor is: \(String(describing:sensor))")
              
+             var verified = false
              
-             if !verifyLibre2ManufacturerData(peripheral: peripheral, selectedUid: selectedUid, advertisementData: advertisementData) {
-                 logger.debug("failed Verifiying libre2 connection using manufacturerData")
+             // Starting in mid 2025, libre2 plus sensors in europe identify them self with
+             // their mac address in the device name
+             if let peripheralName = peripheral.name, let preselectedMac = sensor?.macAddress  {
+                 verified = peripheralName == preselectedMac
+                 logger.debug("Verifiying libre2 connection using mac address method:. \(verified)")
+             }
+             
+             if !verified {
+                 verified = verifyLibre2ManufacturerData(peripheral: peripheral, selectedUid: selectedUid, advertisementData: advertisementData)
+                 logger.debug("Verifiying libre2 connection using legacy manufacturerData method: \(verified)")
+                     
+             }
+             
+             if !verified {
+                 logger.debug("verification failed, not connecting")
                  return
              }
 

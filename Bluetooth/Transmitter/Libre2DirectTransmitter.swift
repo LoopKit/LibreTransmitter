@@ -46,7 +46,27 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
     private var metadata: LibreTransmitterMetadata?
 
     class func canSupportPeripheral(_ peripheral: PeripheralProtocol) -> Bool {
-        peripheral.name?.lowercased().starts(with: "abbott") ?? false
+        // name can be one of the following formats:
+        // <description>: example
+        //ABBOT<SerialNumber>: ABBOTT3MH015PCNC4
+        // <MACADDRESS>: A4B7C9023F8D
+        
+        guard let name = peripheral.name else {
+            return false
+        }
+        
+        if name.lowercased().starts(with: "abbott") == true {
+            print("Libre 2 detected using legacy name format as matcher")
+            return true
+        }
+        
+        print("Libre 2 detection using MAC address as matcher: \(UserDefaults.standard.preSelectedSensor?.macAddress?.lowercased()) vs \(name.lowercased())")
+        if let sensor = UserDefaults.standard.preSelectedSensor, let macAddress = sensor.macAddress {
+            return name.lowercased().contains(macAddress.lowercased())
+        }
+        
+        
+        return false
     }
 
     class func getDeviceDetailsFromAdvertisement(advertisementData: [String: Any]?) -> String? {
@@ -143,7 +163,7 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
 
             metadata = LibreTransmitterMetadata(hardware: nil, firmware: nil, battery: 100,
                                                 name: Self.shortTransmitterName,
-                                                macAddress: nil,
+                                                macAddress: sensor.macAddress,
                                                 patchInfo: sensor.patchInfo,
                                                 uid: [UInt8](sensor.uuid))
 
