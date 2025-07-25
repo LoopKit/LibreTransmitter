@@ -1,8 +1,26 @@
+/* Label text for step 1 of AuthView */
+"Activate and finish warming up a new sensor with another app or physical reader." = "Activez et terminez le préchauffage d'un nouveau capteur avec une autre application ou un lecteur physique.";
+
 /* Confirmation message for deleting a CGM */
 "Are you sure you want to delete this CGM?" = "Voulez-vous vraiment supprimer ce CGM?";
 
+/* Text describing question to remove the cgmmanager from loop */
+"Are you sure you want to remove this cgm from loop?" = "Êtes-vous sûr de vouloir retirer ce CGM de Loop ?";
+
+/* Text of Authenticate button in AuthView */
+"Authenticate" = "Authentifier";
+
+/* Bluetooth Transmitter connection option */
+"Bluetooth Transmitters" = "Émetteurs Bluetooth";
+
 /* The title of the cancel action in an action sheet */
 "Cancel" = "Annuler";
+
+/* Text describing header for advanced settings section */
+"Configuration" = "Configuration";
+
+/* Text describing options for connecting to sensor or transmitter */
+"Connection options" = "Options de connexion";
 
 /* Title of cell to set credentials */
 "Credentials" = "Identifiant";
@@ -10,31 +28,115 @@
 /* Title describing glucose date */
 "Date" = "Date";
 
+/* Unit for singular day in sensor liferemaining */
+"day" = "jour";
+
+/* Unit for plural days in sensor life remaining */
+"days" = "jours";
+
+/* Text describing header for debug options in glucosesettingsview */
+"Debug options" = "Options de débogage";
+
+/* Action text for deleting cgmmanager */
+"Delete" = "Supprimer";
+
 /* Button title to delete CGM
    Title text for the button to remove a CGM from Loop */
 "Delete CGM" = "Supprimer CGM";
 
+/* Text describing header for device info section */
+"Device Info" = "Informations sur l'appareil";
+
+/* Label text for step 2 of libre2 setup */
+"Disconnect and unpair any other app or device communicating with the sensor via bluetooth." = "Déconnectez et désassociez toute autre application ou appareil communiquant avec le capteur via Bluetooth.";
+
+/* Text for discovered number of devices */
+"Found devices:" = "Appareils trouvés :";
+
+/* The short unit display string for grams */
+"g" = "g";
+
 /* Title describing glucose value */
 "Glucose" = "Glycémie";
+
+/* No comment provided by engineer. */
+"Got it!" = "J'ai compris!";
+
+/* Text describing High glucose label in alarmsettingsview */
+"High" = "Élevé";
+
+/* Unit for singular hour in sensor life remaining */
+"hour" = "heure";
+
+/* Unit for plural hours in sensor life remaining */
+"hours" = "heures";
+
+/* Label text for step 3 of libre2 setup */
+"Keep phone unlocked and your Loop app in the foreground." = "Gardez votre téléphone déverrouillé et votre application Loop en premier plan.";
+
+/* Text describing header for Blood Sugar prediction section */
+"Last Blood Sugar prediction" = "Dernière prédiction de glycémie";
 
 /* Section title for latest glucose reading */
 "Latest Reading" = "Dernière mesure";
 
+/* Libre 2 connection option */
+"Libre 2 Direct" = "Libre 2 en mode Direct";
+
+/* Text header for Libre Transmitters choice */
+"Libre Transmitters" = "Transmetteurs Libre";
+
+/* The short unit display string for milligrams of glucose per decilter */
+"mg/dL" = "mg/dL";
+
+/* Unit for singular minute in sensor life remaining */
+"minute" = "minute";
+
+/* Unit for plural minutes in sensor life remaining */
+"minutes" = "minutes";
+
+/* The short unit display string for millimoles of glucose per liter */
+"mmol/L" = "mmol/L";
+
+/* Label text for step 3 of connection setup */
+"Most libre 1 and libre 2 sensors are supported, except North America Libre 2; see readme.md for details." = "La plupart des capteurs Libre 1 et Libre 2 sont pris en charge, à l'exception du Libre 2 Nord Américain; consultez le fichier readme.md pour plus de détails.";
+
 /* Outside US share server option title */
 "Outside US" = "À l'extérieur des É.-U.";
+
+/* Button title for pairing sensor when pairing */
+"Pairing..." = "Association...";
 
 /* The title of the Dexcom share password credential */
 "Password" = "Mot de passe";
 
+/* Label text for step 2 of AuthView */
+"Press the Authenticate Button." = "Appuyez sur le bouton Authentifier.";
+
+/* Text describing sensor expires in label in settingsview */
+"Sensor expires in " = "Le capteur expire dans ";
+
+/* No comment provided by engineer. */
+"Sensor is expired" = "Le capteur est expiré";
+
 /* The title of the Dexcom share server URL credential */
 "Server" = "Serveur";
 
+/* Label text for step 3 of libre2 setup */
+"The Bluetooth connection will take up to four minutes before it starts working." = "La connexion Bluetooth prendra jusqu'à quatre minutes avant de commencer à fonctionner.";
+
 /* Title describing glucose trend */
 "Trend" = "Trend";
+
+/* The short unit display string for international units of insulin */
+"U" = "U";
 
 /* U.S. share server option title */
 "US" = "É.-U.";
 
 /* The title of the Dexcom share username credential */
 "Username" = "Nom d'utilisateur";
+
+/* Label text for step 1 of libre2 setup */
+"Your sensor must be activated and fully warmed up." = "Votre capteur doit être activé et son temps de chauffe effectué.";
 

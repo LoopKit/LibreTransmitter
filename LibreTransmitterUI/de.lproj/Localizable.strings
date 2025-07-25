@@ -41,8 +41,7 @@
 /* Label text for step 4 of connection setup */
 "Fair warning: The sensor will be not be using the manufacturer's algorithm, and some safety mitigations present in the manufacturers algorithm might be missing when you use this." = "Eine Warnung: Der Sensor verwendet nicht den Algorithmus des Herstellers, und einige Sicherheitsvorkehrungen, die im Algorithmus des Herstellers enthalten sind, könnten fehlen, wenn Sie diesen verwenden.";
 
-/* Text for discovered number of devices
-   Text for discovered number of devices \(devicesCount) */
+/* Text for discovered number of devices */
 "Found devices:" = "Gefundene Geräte:";
 
 /* Title describing glucose value */
@@ -78,9 +77,6 @@
 /* Text describing Low glucose label in alarmsettingsview */
 "Low" = "Niedrig";
 
-/* No comment provided by engineer. */
-"Misc" = "Verschiedene";
-
 /* Text describing no connection label in settingsview */
 "No Connection: " = "Keine Verbindung: ";
 
@@ -111,8 +107,7 @@
 /* Text describing Save button in calibrationeditview */
 "Save" = "Speichern";
 
-/* Text describing schedule in alarmsettingsview
-   Text describing schedule in alarmsettingsview\(i+1) */
+/* Text describing schedule in alarmsettingsview */
 "Schedule " = "Geplant ";
 
 /* Text describing sensor expires in label in settingsview */

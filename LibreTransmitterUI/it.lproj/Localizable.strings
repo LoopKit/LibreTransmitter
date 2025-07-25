@@ -1,8 +1,8 @@
 /* No comment provided by engineer. */
 "%@" = "%@";
 
-/* No comment provided by engineer. */
-"%@%" = "%1$@ %2$";
+/* Label text for step 1 of AuthView */
+"Activate and finish warming up a new sensor with another app or physical reader." = "Attiva e completa il riscaldamento di un nuovo sensore con un'altra app o lettore fisico";
 
 /* Text describing heading for additional notification types for third party transmitters */
 "Additional notification types" = "Tipi di notifica aggiuntivi";
@@ -36,6 +36,9 @@
 
 /* Text describing click to snooze label in snoozeview */
 "Click to Snooze Alerts" = "Clicca per silenziare avvisi";
+
+/* Text describing header for advanced settings section */
+"Configuration" = "Configurazione";
 
 /* Text describing options for connecting to sensor or transmitter */
 "Connection options" = "Opzioni di connessione";
@@ -74,11 +77,13 @@
 /* Text of Sensor Setup Button in AuthView */
 "Disconnect & Continue Setup" = "Disconnettersi e continuare l'installazione";
 
+/* Label text for step 2 of libre2 setup */
+"Disconnect and unpair any other app or device communicating with the sensor via bluetooth." = "Disconnettere e disaccoppiare qualsiasi altra applicazione o dispositivo che comunichi con il sensore via bluetooth.";
+
 /* Label text for step 4 of connection setup */
 "Fair warning: The sensor will be not be using the manufacturer's algorithm, and some safety mitigations present in the manufacturers algorithm might be missing when you use this." = "Attenzione: Il sensore non utilizzerà l'algoritmo del produttore e alcune mitigazioni di sicurezza presenti nell'algoritmo del produttore potrebbero mancare quando si utilizza questo.";
 
-/* Text for discovered number of devices
-   Text for discovered number of devices \(devicesCount) */
+/* Text for discovered number of devices */
 "Found devices:" = "Dispositivi trovati:";
 
 /* The short unit display string for grams */
@@ -101,6 +106,9 @@
 
 /* Unit for plural hours in sensor life remaining */
 "hours" = "ore";
+
+/* Label text for step 3 of libre2 setup */
+"Keep phone unlocked and your Loop app in the foreground." = "Mantenere il telefono sbloccato e l'applicazione Loop in primo piano";
 
 /* Text describing header for Blood Sugar prediction section */
 "Last Blood Sugar prediction" = "Ultima previsione glicemia";
@@ -129,11 +137,11 @@
 /* Unit for plural minutes in sensor life remaining */
 "minutes" = "minuti";
 
-/* No comment provided by engineer. */
-"Misc" = "Varie";
-
 /* The short unit display string for millimoles of glucose per liter */
 "mmol/L" = "mmol/l";
+
+/* Label text for step 3 of connection setup */
+"Most libre 1 and libre 2 sensors are supported, except North America Libre 2; see readme.md for details." = "Sono supportati la maggior parte dei sensori libre 1 e libre 2, ad eccezione del Nord America Libre 2; vedere readme.md per i dettagli.";
 
 /* Text describing no connection label in settingsview */
 "No Connection: " = "Nessuna connessione";
@@ -156,6 +164,9 @@
 /* Text for pausing glucose alarms */
 "Pause Glucose alarms" = "Mettere in pausa gli allarmi del glucosio";
 
+/* Label text for step 2 of AuthView */
+"Press the Authenticate Button." = "Premi il pulsante Autentica";
+
 /* Label text for step 3 of AuthView */
 "Proceed to pair new sensor in the next screens. Note that you will loose connection to any existing sensor or transmitter" = "Procedere con l'associazione del nuovo sensore nelle schermate successive. Tieni presente che perderai la connessione a qualsiasi sensore o trasmettitore esistente";
 
@@ -168,8 +179,7 @@
 /* Text describing Save button in calibrationeditview */
 "Save" = "Salva";
 
-/* Text describing schedule in alarmsettingsview
-   Text describing schedule in alarmsettingsview\(i+1) */
+/* Text describing schedule in alarmsettingsview */
 "Schedule " = "Programma";
 
 /* Text describing user choice of selecting which transmitter to connect to */
@@ -187,6 +197,9 @@
 /* Text describing Sensor serial label in settingsview */
 "Sensor Serial" = "Seriale sensore";
 
+/* Label text for step 1 of connection setup */
+"Sensor should be activated and fully warmed up." = "Il sensore deve essere attivato e completamente riscaldato";
+
 /* Text describing Sensor state label in settingsview */
 "Sensor State" = "Stato sensore";
 
@@ -194,10 +207,10 @@
 "Server" = "Server";
 
 /* No comment provided by engineer. */
-"some faultAction" = "qualche colpaAzione";
-
-/* No comment provided by engineer. */
 "Strength" = "Forza";
+
+/* Label text for step 3 of libre2 setup */
+"The Bluetooth connection will take up to four minutes before it starts working." = "La connessione Bluetooth richiederà fino a quattro minuti prima che inizi a funzionare";
 
 /* Text warning user there is no undo for deleting cgmmanager */
 "There is no undo. Deleting requires authentication!" = "Non è possibile annullare. L'eliminazione richiede l'autenticazione!";
@@ -211,16 +224,15 @@
 /* The short unit display string for international units of insulin */
 "U" = "U";
 
-/* No comment provided by engineer. */
-"Unit override" = "Sostituzione dell'unità";
-
 /* U.S. share server option title */
 "US" = "USA";
 
 /* The title of the Dexcom share username credential */
 "Username" = "Nome Utente";
 
-/* Text describing technical details about the validity of calibrations 
-   Text describing technical details about the validity of calibrations \(newParams.isValidForFooterWithReverseCRCs) */
+/* Text describing technical details about the validity of calibrations */
 "Valid for footer: " = "Valido per il piè di pagina:";
+
+/* Label text for step 1 of libre2 setup */
+"Your sensor must be activated and fully warmed up." = "Il sensore deve essere attivato e completamente riscaldato";
 
