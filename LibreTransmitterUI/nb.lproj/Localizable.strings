@@ -1,6 +1,9 @@
 /* No comment provided by engineer. */
 "%@" = "%@";
 
+/* No comment provided by engineer. */
+"%@%%" = "%@%%";
+
 /* Label text for step 1 of AuthView */
 "Activate and finish warming up a new sensor with another app or physical reader." = "Aktiver og fullfør oppvarmingen av en ny sensor med en annen app eller fysisk leser.";
 
@@ -147,7 +150,7 @@
 "No Connection: " = "Ingen forbindelse:";
 
 /* Text describing option for letting user choose notifying for every reading, every second reading etc */
-"Notify per reading" = "Varsle per avlesning";
+"Notify per reading" = "Varsle pr. avlesning";
 
 /* Outside US share server option title */
 "Outside US" = "Utenfor USA";

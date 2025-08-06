@@ -50,6 +50,9 @@
 /* Label text for step 2 of libre2 setup */
 "Disconnect and unpair any other app or device communicating with the sensor via bluetooth." = "Déconnectez et désassociez toute autre application ou appareil communiquant avec le capteur via Bluetooth.";
 
+/* Label text for step 4 of connection setup */
+"Fair warning: The sensor will be not be using the manufacturer's algorithm, and some safety mitigations present in the manufacturers algorithm might be missing when you use this." = "Attention : le capteur n'utilisera pas l'algorithme du fabricant et certaines mesures de sécurité présentes dans l'algorithme du fabricant peuvent être manquantes lorsque vous l'utilisez.";
+
 /* Text for discovered number of devices */
 "Found devices:" = "Appareils trouvés :";
 
@@ -77,11 +80,14 @@
 /* Text describing header for Blood Sugar prediction section */
 "Last Blood Sugar prediction" = "Dernière prédiction de glycémie";
 
+/* Text describing header for last measurement section */
+"Last measurement" = "Dernière mesure";
+
 /* Section title for latest glucose reading */
 "Latest Reading" = "Dernière mesure";
 
 /* Libre 2 connection option */
-"Libre 2 Direct" = "Libre 2 en mode Direct";
+"Libre 2 Direct" = "Libre 2 Direct";
 
 /* Text header for Libre Transmitters choice */
 "Libre Transmitters" = "Transmetteurs Libre";
