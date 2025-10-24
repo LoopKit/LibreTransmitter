@@ -16,6 +16,11 @@ import CoreBluetooth
 import os.log
 
 open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
+    public var inSignalLoss: Bool = false
+    
+    public var isInoperable: Bool {
+        cgmManagerStatus.isInoperable
+    }
 
     public typealias GlucoseArrayWithPrediction = (trends: [LibreGlucose], historical: [LibreGlucose], prediction: [LibreGlucose])
     public lazy var logger = Logger(forType: Self.self)
