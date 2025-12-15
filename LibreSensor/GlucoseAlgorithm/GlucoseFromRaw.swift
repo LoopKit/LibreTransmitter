@@ -258,73 +258,111 @@ fileprivate let t2 = [
     0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999,
 ];
 
+/ MARK: - Feature flags
+
+fileprivate enum GlucoseAlgorithmFeatures {
+    /// Clamp temperature exponent to reduce low-end noise
+    static let clampTemperatureExponent = true
+
+    /// Apply Abbott-like low glucose uplift
+    static let lowGlucoseBiasEnabled = true
+}
+
+// MARK: - Constants
+
+fileprivate let lowGlucoseBiasThreshold = 80.0   // mg/dL
+fileprivate let lowGlucoseBiasFactor    = 0.05   // 5%
+
+fileprivate let temperatureExponentClampMin = -6.0
+fileprivate let temperatureExponentClampMax =  6.0
+
+// MARK: - Measurement extension
+
 extension MeasurementProtocol {
-    func roundedGlucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo) -> Int {
+
+    func roundedGlucoseValueFromRaw(
+        calibrationInfo: SensorData.CalibrationInfo
+    ) -> Int {
         Int(round(glucoseValueFromRaw(calibrationInfo: calibrationInfo)))
     }
 
-    func roundedGlucoseValueFromRaw2(calibrationInfo: SensorData.CalibrationInfo) -> Double{
+    func roundedGlucoseValueFromRaw2(
+        calibrationInfo: SensorData.CalibrationInfo
+    ) -> Double {
         round(glucoseValueFromRaw(calibrationInfo: calibrationInfo))
     }
 
-    
-    func glucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo) -> Double {
-        let x : Double = 1000 + 71500;
-        let y : Double = 1000;
+    // MARK: - Core algorithm
 
-        let ca = 0.0009180023;
-        let cb = 0.0001964561;
-        let cc = 0.0000007061775;
-        let cd = 0.00000005283566;
+    func glucoseValueFromRaw(
+        calibrationInfo: SensorData.CalibrationInfo
+    ) -> Double {
 
+        // --- Constants (UNCHANGED) ---
+        let x: Double = 1000 + 71500
+        let y: Double = 1000
+
+        let ca = 0.0009180023
+        let cb = 0.0001964561
+        let cc = 0.0000007061775
+        let cd = 0.00000005283566
+
+        // --- Raw inputs ---
         let rawTemperature = Double(self.rawTemperature)
         let rawTemperatureAdjustment = Double(self.rawTemperatureAdjustment)
         let rawGlucose = Double(self.rawGlucose)
 
-        let rLeft = rawTemperature * x
+        // --- Temperature reconstruction ---
+        let rLeft  = rawTemperature * x
         let rRight = rawTemperatureAdjustment + calibrationInfo.i6
+        let R = (rLeft / rRight) - y
 
+        let logR = log(R)
 
-        let R  = ( rLeft / rRight ) - y; //67300.05624296963
+        let d =
+            pow(logR, 3) * cd +
+            pow(logR, 2) * cc +
+            logR * cb +
+            ca
 
+        let temperature = 1.0 / d - 273.15
 
-        let logR  = log(R) //11.116916351337814
+        // --- Raw glucose scaling (UNCHANGED) ---
+        let g1 =
+            65.0 *
+            (rawGlucose - calibrationInfo.i3) /
+            (calibrationInfo.i4 - calibrationInfo.i3)
 
-        //print("logR:", logR)
+        // --- Temperature compensation ---
+        let exponent = 32.5 - temperature
 
-        //d = (logR ** 3) * cd + (logR ** 2) * cc + logR * cb + ca;
+        let compensatedExponent: Double
+        if GlucoseAlgorithmFeatures.clampTemperatureExponent {
+            compensatedExponent = min(
+                temperatureExponentClampMax,
+                max(temperatureExponentClampMin, exponent)
+            )
+        } else {
+            compensatedExponent = exponent
+        }
 
-        let d  = pow(logR, 3) * cd + pow(logR, 2) * cc + logR * cb + ca
-        //print("d:", d) //0.003261852422880152
+        let g2 = pow(1.045, compensatedExponent)
+        let g3 = g1 * g2
 
-        let temperature = 1 / d - 273.15;
+        // --- Calibration lookup (UNCHANGED) ---
+        let v1 = t1[calibrationInfo.i2 - 1]
+        let v2 = t2[calibrationInfo.i2 - 1]
 
-        //print("temperature:", temperature) //33.4242622154008
+        var glucose = (g3 - v1) / v2
 
-        let g1 = 65.0 * (rawGlucose - calibrationInfo.i3) / (calibrationInfo.i4 - calibrationInfo.i3); // 13.647891477440282
-        let g2 = pow(1.045, 32.5 - temperature); //0.9601333057248764
+        // --- Low glucose bias (OPTIONAL, FEATURE-FLAGGED) ---
+        if GlucoseAlgorithmFeatures.lowGlucoseBiasEnabled,
+           glucose < lowGlucoseBiasThreshold {
 
+            let delta = lowGlucoseBiasThreshold - glucose
+            glucose += delta * lowGlucoseBiasFactor
+        }
 
-        let g3 = g1 * g2 // 13.103795160409106
-
-        //print("g1:", g1)
-        //print("g2:", g2)
-        //print("g3:", g3)
-
-
-        let v1 = t1[calibrationInfo.i2 - 1] // 1.75
-        let v2 = t2[calibrationInfo.i2 - 1] // 0.0706475
-
-        //print("v1:", v1)
-        //print("v2", v2)
-
-        let res = (g3 - v1) / v2; // 160.71050158051037
-
-        //print("res:", res)
-
-        return  res
-
+        return glucose
     }
 }
-
-
