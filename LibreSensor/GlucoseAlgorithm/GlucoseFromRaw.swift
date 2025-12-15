@@ -317,13 +317,10 @@ extension MeasurementProtocol {
         let rRight = rawTemperatureAdjustment + calibrationInfo.i6
         let R = (rLeft / rRight) - y
 
-        let logR = log(R)
+        let safeLogR = min(max(logR, 6.0), 14.0)
 
-        let d =
-            pow(logR, 3) * cd +
-            pow(logR, 2) * cc +
-            logR * cb +
-            ca
+        // Horner form for numerical stability (mathematically identical)
+        let d = ((cd * safeLogR + cc) * safeLogR + cb) * safeLogR + ca
 
         let temperature = 1.0 / d - 273.15
 
