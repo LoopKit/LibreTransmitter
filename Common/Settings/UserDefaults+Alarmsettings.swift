@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import HealthKit
+import LoopAlgorithm
 
 extension UserDefaults {
     private enum Key: String {
@@ -135,22 +135,22 @@ extension UserDefaults {
     }
 
     // intentionally only supports mgdl and mmol
-    var mmGlucoseUnit: HKUnit? {
+    var mmGlucoseUnit: LoopUnit? {
         get {
             if let textUnit = string(forKey: Key.mmGlucoseUnit.rawValue) {
                 if textUnit == "mmol" {
-                    return HKUnit.millimolesPerLiter
+                    return LoopUnit.millimolesPerLiter
                 } else if textUnit == "mgdl" {
-                    return HKUnit.milligramsPerDeciliter
+                    return LoopUnit.milligramsPerDeciliter
                 }
             }
 
             return nil
         }
         set {
-            if newValue == HKUnit.milligramsPerDeciliter {
+            if newValue == LoopUnit.milligramsPerDeciliter {
                 set("mgdl", forKey: Key.mmGlucoseUnit.rawValue)
-            } else if newValue == HKUnit.millimolesPerLiter {
+            } else if newValue == LoopUnit.millimolesPerLiter {
                 set("mmol", forKey: Key.mmGlucoseUnit.rawValue)
             }
         }

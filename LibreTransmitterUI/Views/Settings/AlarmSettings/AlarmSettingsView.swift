@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import HealthKit
+import LoopAlgorithm
 
 private func systemImage(_ name:String) -> some View {
     Image(systemName: name)
@@ -27,9 +27,9 @@ class AlarmScheduleState: ObservableObject, Identifiable, Hashable {
 
     @Published var alarmDateComponents: AlarmTimeCellExternalState = AlarmTimeCellExternalState()
 
-    public func setLowAlarm(forUnit unit: HKUnit, lowAlarm: Double) {
+    public func setLowAlarm(forUnit unit: LoopUnit, lowAlarm: Double) {
 
-        if unit == HKUnit.millimolesPerLiter {
+        if unit == LoopUnit.millimolesPerLiter {
             self.lowmgdl = lowAlarm * 18
             return
         }
@@ -37,9 +37,9 @@ class AlarmScheduleState: ObservableObject, Identifiable, Hashable {
         self.lowmgdl = lowAlarm
     }
 
-    public func getLowAlarm(forUnit unit: HKUnit) -> Double {
+    public func getLowAlarm(forUnit unit: LoopUnit) -> Double {
 
-        if unit == HKUnit.millimolesPerLiter {
+        if unit == LoopUnit.millimolesPerLiter {
             return (lowmgdl / 18).roundTo(places: 1)
         }
 
@@ -47,9 +47,9 @@ class AlarmScheduleState: ObservableObject, Identifiable, Hashable {
 
     }
 
-    public func setHighAlarm(forUnit unit: HKUnit, highAlarm: Double) {
+    public func setHighAlarm(forUnit unit: LoopUnit, highAlarm: Double) {
 
-        if unit == HKUnit.millimolesPerLiter {
+        if unit == LoopUnit.millimolesPerLiter {
             self.highmgdl = highAlarm * 18
             return
         }
@@ -57,9 +57,9 @@ class AlarmScheduleState: ObservableObject, Identifiable, Hashable {
         self.highmgdl = highAlarm
     }
 
-    public func getHighAlarm(forUnit unit: HKUnit) -> Double {
+    public func getHighAlarm(forUnit unit: LoopUnit) -> Double {
 
-        if unit == HKUnit.millimolesPerLiter {
+        if unit == LoopUnit.millimolesPerLiter {
             return (highmgdl / 18).roundTo(places: 1)
         }
         return highmgdl
@@ -207,7 +207,7 @@ struct AlarmDateRow: View {
 
 struct AlarmLowRow: View {
     @ObservedObject var schedule: AlarmScheduleState
-    var glucoseUnit: HKUnit
+    var glucoseUnit: LoopUnit
     var glucoseUnitDesc: String
 
     var errorReporter: FormErrorState
@@ -249,7 +249,7 @@ struct AlarmLowRow: View {
 
 struct AlarmHighRow: View {
     @ObservedObject var schedule: AlarmScheduleState
-    var glucoseUnit: HKUnit
+    var glucoseUnit: LoopUnit
     var glucoseUnitDesc: String
 
     var errorReporter: FormErrorState
@@ -287,7 +287,7 @@ struct AlarmHighRow: View {
 
 struct AlarmSettingsView: View {
 
-    private(set) var glucoseUnit: HKUnit
+    private(set) var glucoseUnit: LoopUnit
 
     var glucoseUnitDesc: String {
         // "mmol/L"

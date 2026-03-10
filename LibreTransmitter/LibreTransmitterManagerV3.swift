@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import LoopAlgorithm
 import LoopKit
 import LoopKitUI
 import UIKit
@@ -12,16 +13,14 @@ import UserNotifications
 import Combine
 
 import CoreBluetooth
-import HealthKit
 import os.log
 
 open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
+    public var inSignalLoss: Bool = false
     
-    
-
-    
-   
-    
+    public var isInoperable: Bool {
+        cgmManagerStatus.isInoperable
+    }
 
     public typealias GlucoseArrayWithPrediction = (trends: [LibreGlucose], historical: [LibreGlucose], prediction: [LibreGlucose])
     public lazy var logger = Logger(forType: Self.self)
@@ -228,7 +227,7 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
     }
 
-    static public let pluginIdentifier: String = "LibreTransmitterManagerV3"
+    public let pluginIdentifier: String = "LibreTransmitterManagerV3"
 
     public required convenience init?(rawState: CGMManager.RawStateValue) {
 
@@ -543,7 +542,7 @@ extension LibreTransmitterManagerV3 {
 
 
 extension LibreTransmitterManagerV3: DisplayGlucoseUnitObserver {
-    public func unitDidChange(to displayGlucoseUnit: HKUnit) {
+    public func unitDidChange(to displayGlucoseUnit: LoopUnit) {
         self.alertsUnitPreference.unitDidChange(to: displayGlucoseUnit)
     }
 }
