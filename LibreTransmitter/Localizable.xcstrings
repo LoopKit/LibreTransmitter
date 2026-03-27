@@ -1409,7 +1409,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Necesită atenție"
+            "value" : "Necesită Atenție"
           }
         },
         "ru" : {
@@ -2137,7 +2137,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Telefonul sau aplicația dvs. nu este activată pentru comunicații NFC, care sunt necesare pentru conectarea la senzorii Libre 2."
+            "value" : "Telefonul sau aplicația dumneavoastră nu este activată pentru comunicare NFC, care este necesară pentru conectarea la senzorii Libre 2."
           }
         },
         "ru" : {
