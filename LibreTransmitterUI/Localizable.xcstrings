@@ -5266,7 +5266,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Realizat"
+            "value" : "Gata"
           }
         },
         "ru" : {
@@ -6433,7 +6433,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Am înţeles!"
+            "value" : "Am înțeles!"
           }
         },
         "ru" : {
@@ -7589,7 +7589,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ultima citire"
+            "value" : "Ultima Citire"
           }
         },
         "ru" : {
@@ -9161,7 +9161,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurarea unui nou dispozitiv"
+            "value" : "Configurarea Dispozitiv Nou"
           }
         },
         "ru" : {
@@ -12546,7 +12546,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sensor should be activated and fully warmed up."
+            "value" : "Votre capteur doit être activé et son temps de chauffe effectué."
           }
         },
         "he" : {
