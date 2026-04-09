@@ -731,6 +731,7 @@
     },
     "g" : {
       "comment" : "The short unit display string for grams",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1016,6 +1017,7 @@
     },
     "mg/dL" : {
       "comment" : "The short unit display string for milligrams of glucose per decilter",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1159,6 +1161,7 @@
     },
     "mmol/L" : {
       "comment" : "The short unit display string for millimoles of glucose per liter",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1763,6 +1766,7 @@
     },
     "U" : {
       "comment" : "The short unit display string for international units of insulin",
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
