@@ -516,6 +516,9 @@ extension LibreTransmitterManagerV3 {
         logger.debug("tried creating trendarrow using \(glucoses.count) elements for trend calc")
         
         return glucoses
+            // filterDateRange uses a binary search that requires ascending order;
+            // these glucoses are newest-first, so sort before filtering.
+            .sorted { $0.startDate < $1.startDate }
             .filterDateRange(startDate, nil)
             .compactMap {
                 return NewGlucoseSample(
