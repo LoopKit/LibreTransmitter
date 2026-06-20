@@ -240,7 +240,7 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
         [:]
     }
 
-    open var localizedTitle: String { "FreeStyle Libre" }
+    open var localizedTitle: String { "FreeStyle Libre 1 / 2 / 2+" }
 
     public let appURL: URL? = nil // URL(string: "spikeapp://")
 
