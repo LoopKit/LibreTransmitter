@@ -22,8 +22,6 @@ This is a https://github.com/loopkit/loop plugin for connecting to libresensors 
 * Glucose data is smoothed to avoid noise, using a 5 point moving average filter
 * Official algorithm implements glucose prediction, to align cgm values with blood values; this feature is deliberately removed from this implementation
 * Glucose readout interval: 5 minutes
-* Glucose alarms
-* Glucose notifications on lockscreen
 * Manual calibration for expert users (warnings apply here, this feature can be extremly dangerous)
 
 # How it looks
@@ -37,4 +35,3 @@ It's a dynamic loop plugin. I usually build a modified loopworkspace to get this
 
 ## Glucose Algorithm
 The GetGlucoseFromRaw.swift file is not included in this repo. You need to explicitly download this file from other sources and add it before you build
-
