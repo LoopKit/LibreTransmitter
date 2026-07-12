@@ -1,5 +1,5 @@
 //
-//  Userdefaults+Alarmsettings.swift
+//  UserDefaults+NotificationSettings.swift
 //  MiaomiaoClient
 //
 //  Created by LoopKit Authors on 20/04/2019.
