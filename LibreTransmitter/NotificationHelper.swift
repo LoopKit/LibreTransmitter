@@ -6,7 +6,6 @@
 //  Copyright © 2019 LoopKit Authors. All rights reserved.
 //
 
-import AudioToolbox
 import Foundation
 import LoopAlgorithm
 import LoopKit
@@ -18,7 +17,6 @@ private var logger = Logger(forType: "NotificationHelper")
 public enum NotificationHelper {
 
     private enum Identifiers: String {
-        case glucocoseNotifications = "com.loopkit.libremiaomiao.glucose-notification"
         case noSensorDetected = "com.loopkit.libremiaomiao.nosensordetected-notification"
         case tryAgainLater = "com.loopkit.libremiaomiao.glucoseNotAvailableTryAgainLater-notification"
         case sensorChange = "com.loopkit.libremiaomiao.sensorchange-notification"
@@ -31,17 +29,6 @@ public enum NotificationHelper {
         case libre2directFinishedSetup = "com.loopkit.libremiaomiao.libre2direct-notification"
     }
     
-    private static func vibrate(times: Int=3) {
-        guard times >= 0 else {
-            return
-        }
-        
-
-        AudioServicesPlaySystemSoundWithCompletion(kSystemSoundID_Vibrate) {
-            vibrate(times: times - 1)
-        }
-    }
-
     public static func GlucoseUnitIsSupported(unit: LoopUnit) -> Bool {
         [LoopUnit.milligramsPerDeciliter, LoopUnit.millimolesPerLiter].contains(unit)
     }
@@ -275,114 +262,6 @@ public extension NotificationHelper {
 
             addRequest(identifier: .invalidChecksum, content: content)
         }
-    }
-
-    private static var glucoseNotifyCalledCount = 0
-
-    static func sendGlucoseNotificationIfNeeded(glucose: LibreGlucose, oldValue: LibreGlucose?, trend: GlucoseTrend?, battery: String?, glucoseFormatter: QuantityFormatter) {
-        glucoseNotifyCalledCount &+= 1
-
-        let shouldSendGlucoseAlternatingTimes = glucoseNotifyCalledCount != 0 && UserDefaults.standard.mmNotifyEveryXTimes != 0
-
-        let shouldSend = UserDefaults.standard.mmAlwaysDisplayGlucose ||
-            (shouldSendGlucoseAlternatingTimes && glucoseNotifyCalledCount % UserDefaults.standard.mmNotifyEveryXTimes == 0)
-
-        let schedules = UserDefaults.standard.glucoseSchedules
-
-        let alarm = schedules?.getActiveAlarms(glucose.glucoseDouble) ?? .none
-        let isSnoozed = GlucoseScheduleList.isSnoozed()
-
-        let shouldShowPhoneBattery = UserDefaults.standard.mmShowPhoneBattery
-        let transmitterBattery = UserDefaults.standard.mmShowTransmitterBattery && battery != nil ? battery : nil
-
-        logger.debug("\(#function) glucose alarmtype is \(String(describing: alarm))")
-        // We always send glucose notifications when alarm is active,
-        // even if glucose notifications are disabled in the UI
-
-        if shouldSend || alarm.isAlarming() {
-            sendGlucoseNotification(glucose: glucose, oldValue: oldValue,
-                                    glucoseFormatter: glucoseFormatter,
-                                    alarm: alarm, isSnoozed: isSnoozed,
-                                    trend: trend, showPhoneBattery: shouldShowPhoneBattery,
-                                    transmitterBattery: transmitterBattery)
-        } else {
-            logger.debug("\(#function) not sending glucose, shouldSend and alarmIsActive was false")
-            return
-        }
-    }
-
-    private static func sendGlucoseNotification(glucose: LibreGlucose, oldValue: LibreGlucose?,
-                                                glucoseFormatter: QuantityFormatter,
-                                                alarm: GlucoseScheduleAlarmResult = .none,
-                                                isSnoozed: Bool = false,
-                                                trend: GlucoseTrend?,
-                                                showPhoneBattery: Bool = false,
-                                                transmitterBattery: String?) {
-        let content = UNMutableNotificationContent()
-        let glucoseDesc = glucoseFormatter.string(from: glucose.quantity)!
-        var titles = [String]()
-        var body = [String]()
-        var body2 = [String]()
-
-        switch alarm {
-        case .none:
-            titles.append("Glucose")
-        case .low:
-            titles.append("LOWALERT!")
-        case .high:
-            titles.append("HIGHALERT!")
-        }
-
-        if isSnoozed {
-            titles.append("(Snoozed)")
-        } else if alarm.isAlarming() {
-            content.sound = .default
-            
-            if Features.glucoseAlarmsAlsoCauseVibration {
-                vibrate()
-            }
-            
-        }
-        titles.append(glucoseDesc)
-
-        body.append("Glucose: \(glucoseDesc)")
-
-        if let oldValue {
-            let diff = glucose.glucoseDouble - oldValue.glucoseDouble
-            if diff >= 0 {
-                body.append("+")
-            }
-            body.append( glucoseFormatter.string(from: LoopQuantity(unit: .milligramsPerDeciliter, doubleValue: diff))!)
-        }
-
-        if let trend = trend?.localizedDescription {
-            body.append("\(trend)")
-        }
-
-        if showPhoneBattery {
-            if !UIDevice.current.isBatteryMonitoringEnabled {
-                UIDevice.current.isBatteryMonitoringEnabled = true
-            }
-
-            let battery = Double(UIDevice.current.batteryLevel * 100 ).roundTo(places: 1)
-            body2.append("Phone: \(battery)%")
-        }
-
-        if let transmitterBattery {
-            body2.append("Transmitter: \(transmitterBattery)")
-        }
-
-        // these are texts that naturally fit on their own line in the body
-        var body2s = ""
-        if !body2.isEmpty {
-            body2s = "\n" + body2.joined(separator: "\n")
-        }
-
-        content.title = titles.joined(separator: " ")
-        content.body = body.joined(separator: ", ") + body2s
-        addRequest(identifier: .glucocoseNotifications,
-                   content: content,
-                   deleteOld: true)
     }
 
     private static var lastBatteryWarning: Date?
