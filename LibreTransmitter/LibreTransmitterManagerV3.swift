@@ -169,8 +169,6 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
     public var lastConnected: Date?
 
-    public internal(set) var alarmStatus = AlarmStatus()
-
     internal var latestPrediction: LibreGlucose?
 
     public var latestBackfill: LibreGlucose? {
@@ -181,22 +179,6 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
             var trend: GlucoseTrend?
             let oldValue = latestBackfill
-
-            defer {
-                // once we have a new glucose value, we can update the isalarming property
-                if let activeAlarms = UserDefaults.standard.glucoseSchedules?.getActiveAlarms(newValue.glucoseDouble) {
-                    DispatchQueue.main.async {
-                        self.alarmStatus.isAlarming = ([.high, .low].contains(activeAlarms))
-                        self.alarmStatus.glucoseScheduleAlarmResult = activeAlarms
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                    self.alarmStatus.isAlarming = false
-                    self.alarmStatus.glucoseScheduleAlarmResult = .none
-                    }
-                }
-
-            }
 
             logger.debug("latestBackfill set, newvalue is \(newValue.glucose)")
 

@@ -48,7 +48,6 @@ extension LibreTransmitterManagerV3: CGMManagerUI {
             notifyDelete: wantToTerminateNotifier,
             notifyReset: wantToResetCGMManagerNotifier,
             notifyReconnect:wantToRestablishConnectionNotifier,
-            alarmStatus: self.alarmStatus,
             pairingService: self.pairingService,
             bluetoothSearcher: self.bluetoothSearcher
         )
