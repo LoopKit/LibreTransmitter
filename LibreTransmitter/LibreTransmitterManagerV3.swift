@@ -27,8 +27,6 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
     public let isOnboarded = true   // No distinction between created and onboarded
 
-    private var alertsUnitPreference = DisplayGlucosePreference(displayGlucoseUnit: .milligramsPerDeciliter)
-
     public var hasValidSensorSession: Bool {
         lastConnected != nil
     }
@@ -185,13 +183,6 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
             let oldValue = latestBackfill
 
             defer {
-                logger.debug("sending glucose notification")
-                NotificationHelper.sendGlucoseNotificationIfNeeded(glucose: newValue,
-                                                                   oldValue: oldValue,
-                                                                   trend: trend,
-                                                                   battery: proxy?.metadata?.batteryString ?? "n/a",
-                                                                   glucoseFormatter: alertsUnitPreference.formatter)
-
                 // once we have a new glucose value, we can update the isalarming property
                 if let activeAlarms = UserDefaults.standard.glucoseSchedules?.getActiveAlarms(newValue.glucoseDouble) {
                     DispatchQueue.main.async {
@@ -245,6 +236,8 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
     public let appURL: URL? = nil // URL(string: "spikeapp://")
 
     public let providesBLEHeartbeat = true
+    public let providesOwnGlucoseAlerts = false
+
     public var shouldSyncToRemoteService: Bool {
         UserDefaults.standard.mmSyncToNs
     }
@@ -546,6 +539,5 @@ extension LibreTransmitterManagerV3 {
 
 extension LibreTransmitterManagerV3: DisplayGlucoseUnitObserver {
     public func unitDidChange(to displayGlucoseUnit: LoopUnit) {
-        self.alertsUnitPreference.unitDidChange(to: displayGlucoseUnit)
     }
 }
