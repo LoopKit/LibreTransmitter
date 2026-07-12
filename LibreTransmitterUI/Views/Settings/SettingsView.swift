@@ -242,12 +242,6 @@ struct SettingsView: View {
 
     var advancedSection: some View {
         Section(header: Text(LocalizedString("Configuration", comment: "Text describing header for advanced settings section"))) {
-            if NotificationHelper.criticalAlarmsEnabled {
-                NavigationLink(destination: CriticalAlarmsVolumeView()) {
-                    SettingsItem(title: "Critical Alarms volume")
-                }
-            }
-            
             NavigationLink(destination: GlucoseSettingsView()) {
                 SettingsItem(title: "Glucose Settings")
             }

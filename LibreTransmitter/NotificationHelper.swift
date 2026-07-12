@@ -31,13 +31,6 @@ public enum NotificationHelper {
         case libre2directFinishedSetup = "com.loopkit.libremiaomiao.libre2direct-notification"
     }
     
-    public static var shouldRequestCriticalPermissions = false
-    
-    // don't touch this please
-    public static var criticalAlarmsEnabled = false
-
-    
-
     private static func vibrate(times: Int=3) {
         guard times >= 0 else {
             return
@@ -53,45 +46,6 @@ public enum NotificationHelper {
         [LoopUnit.milligramsPerDeciliter, LoopUnit.millimolesPerLiter].contains(unit)
     }
 
-    private static func requestCriticalNotificationPermissions() {
-        logger.debug("\(#function) called")
-        let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.badge, .sound, .alert, .criticalAlert]) { (granted, error) in
-            if granted {
-                logger.debug("\(#function) was granted")
-                UNUserNotificationCenter.current().getNotificationSettings { settings in
-                    logPermissions(settings)
-                    criticalAlarmsEnabled = settings.criticalAlertSetting == .enabled
-                }
-            } else {
-                logger.debug("\(#function) failed because of error: \(String(describing: error))")
-            }
-
-        }
-
-    }
-    
-    private static func logPermissions(_ settings: UNNotificationSettings, caller: String = #function) {
-        
-        logger.debug("\(caller): alarms allowed: \(String(describing:settings.authorizationStatus)). Critical alarms allowed? \(String(describing:settings.criticalAlertSetting))")
-        
-    }
-
-    public static func requestNotificationPermissionsIfNeeded() {
-        // We assume loop will request necessary "non-critical" permissions for us
-        // So we are only interested in the "critical" permissions here
-        
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            criticalAlarmsEnabled = settings.criticalAlertSetting == .enabled
-            logPermissions(settings)
-            
-            if shouldRequestCriticalPermissions || NotificationHelperOverride.shouldOverrideRequestCriticalPermissions {
-                requestCriticalNotificationPermissions()
-            }
-            
-        }
-    }
-
     private static func ensureCanSendNotification(_ completion: @escaping () -> Void ) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else {
@@ -104,20 +58,9 @@ public enum NotificationHelper {
         }
     }
 
-    private static func addRequest(identifier: Identifiers, content: UNMutableNotificationContent, deleteOld: Bool = false, isCritical: Bool = false) {
+    private static func addRequest(identifier: Identifiers, content: UNMutableNotificationContent, deleteOld: Bool = false) {
         let center = UNUserNotificationCenter.current()
-        
-        if isCritical && Self.criticalAlarmsEnabled {
-            logger.debug("\(#function) critical alarm created")
-            content.interruptionLevel =   .critical
-            
-            let criticalVolume = UserDefaults.standard.mmCriticalAlarmsVolume < 60 ? 60 : UserDefaults.standard.mmCriticalAlarmsVolume
-            logger.debug("\(#function) setting criticalVolume to \(criticalVolume)%")
-            content.sound = .defaultCriticalSound(withAudioVolume: Float(criticalVolume / 100))
-        } else {
-            logger.debug("\(#function) timesensitive alarm created")
-            content.interruptionLevel = .timeSensitive
-        }
+        content.interruptionLevel = .timeSensitive
         
         let request = UNNotificationRequest(identifier: identifier.rawValue, content: content, trigger: nil)
 
@@ -295,7 +238,7 @@ public extension NotificationHelper {
             content.title = "Sensor Ending Soon"
             content.body = "Current Sensor is Ending soon! Sensor Life left in \(dynamicText)"
 
-            addRequest(identifier: .sensorExpire, content: content, deleteOld: true, isCritical: true)
+            addRequest(identifier: .sensorExpire, content: content, deleteOld: true)
         }
     }
 }
@@ -381,16 +324,13 @@ public extension NotificationHelper {
         var body = [String]()
         var body2 = [String]()
 
-        var isCritical = false
         switch alarm {
         case .none:
             titles.append("Glucose")
         case .low:
             titles.append("LOWALERT!")
-            isCritical = true
         case .high:
             titles.append("HIGHALERT!")
-            isCritical = true
         }
 
         if isSnoozed {
@@ -442,7 +382,7 @@ public extension NotificationHelper {
         content.body = body.joined(separator: ", ") + body2s
         addRequest(identifier: .glucocoseNotifications,
                    content: content,
-                   deleteOld: true, isCritical: isCritical && !isSnoozed)
+                   deleteOld: true)
     }
 
     private static var lastBatteryWarning: Date?

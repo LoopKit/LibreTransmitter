@@ -228,7 +228,6 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
         lastConnected = nil
 
         logger.debug("LibreTransmitterManager will be created now")
-        NotificationHelper.requestNotificationPermissionsIfNeeded()
 
         if isDeviceSelected {
             establishProxy()
