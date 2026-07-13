@@ -19,6 +19,8 @@ struct GlucoseSettingsView: View {
     @AppStorage("com.loopkit.libreshouldPersistSensorData") var shouldPersistSensorData: Bool = false
 
     @State private var authSuccess = false
+    @State private var showingMinuteByMinuteWarning = false
+    @State private var minuteByMinuteForwardingEnabled = Features.allowOneMinuteReadings
     
     // Set this to true to require system authentication
     // for accessing the glucose section
@@ -33,6 +35,27 @@ struct GlucoseSettingsView: View {
             Section(header: Text(LocalizedString("Remote data storage", comment: "Text describing header for remote data storage"))) {
                 Toggle("Upload to remote data service", isOn: $mmSyncToNS)
 
+            }
+            Section {
+                Toggle("Send every Libre 2 / Libre 2 Plus reading (experimental)", isOn: Binding(
+                    get: { minuteByMinuteForwardingEnabled },
+                    set: { enabled in
+                        if enabled {
+                            showingMinuteByMinuteWarning = true
+                        } else {
+                            Features.allowOneMinuteReadings = false
+                            minuteByMinuteForwardingEnabled = false
+                        }
+                    }
+                ))
+            } header: {
+                Text("Libre 2 / Libre 2 Plus forwarding")
+            } footer: {
+                if minuteByMinuteForwardingEnabled {
+                    Text("For direct Libre 2 and Libre 2 Plus connections only. LibreTransmitter forwards the newest available reading about once per minute.")
+                } else {
+                    Text("For direct Libre 2 and Libre 2 Plus connections only. LibreTransmitter forwards the newest available reading about once every five minutes.")
+                }
             }
             Section(header: Text(LocalizedString("Debug options", comment: "Text describing header for debug options in glucosesettingsview")), footer: Text(LocalizedString("Adds a lot of data to the Issue Report ", comment: "Text informing user of potentially large reports"))) {
                 Toggle("Persist sensordata", isOn: $shouldPersistSensorData)
@@ -57,10 +80,57 @@ struct GlucoseSettingsView: View {
         .alert(item: $presentableStatus) { status in
             Alert(title: Text(status.title), message: Text(status.message), dismissButton: .default(Text("Got it!")))
         }
+        .sheet(isPresented: $showingMinuteByMinuteWarning) {
+            MinuteByMinuteForwardingWarning {
+                Features.allowOneMinuteReadings = true
+                minuteByMinuteForwardingEnabled = true
+                showingMinuteByMinuteWarning = false
+            } onCancel: {
+                showingMinuteByMinuteWarning = false
+            }
+        }
         .navigationBarTitle("Glucose Settings")
         
     }
 
+}
+
+private struct MinuteByMinuteForwardingWarning: View {
+    let onEnable: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Label("Experimental Libre 2 / Libre 2 Plus setting", systemImage: "exclamationmark.triangle.fill")
+                        .font(.headline)
+                        .foregroundStyle(.orange)
+
+                    Text("This setting applies only when LibreTransmitter is connected directly to a Libre 2 or Libre 2 Plus sensor.")
+
+                    Text("Loop's glucose processing and dosing behavior were designed around readings arriving about every five minutes.")
+
+                    Text("With this enabled, LibreTransmitter sends the newest Libre 2 or Libre 2 Plus reading about once per minute. Loop can store and evaluate each reading, while its full dosing loop remains cadence-limited. The denser history may still affect glucose momentum, retrospective correction, alert timing, and other calculations.")
+
+                    Text("Use this only if you understand the experimental behavior and monitor Loop closely after enabling it.")
+
+                    Button("Enable for Libre 2 / Libre 2 Plus", role: .destructive, action: onEnable)
+                        .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding()
+            }
+            .navigationTitle("Every-minute readings")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onCancel)
+                }
+            }
+        }
+        .interactiveDismissDisabled()
+    }
 }
 
 struct GlucoseSettingsView_Previews: PreviewProvider {

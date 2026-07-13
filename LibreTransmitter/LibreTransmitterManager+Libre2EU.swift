@@ -28,10 +28,10 @@ extension LibreTransmitterManagerV3 {
         let typeDesc = Device.sensorType().debugDescription
 
         let now = Date()
-        // only one reading per 1 minute / 5 minutes
-        let mins = Features.allowOneMinuteReadings ? 0.8 : 4.5
-        if let earlierplus = lastDirectUpdate?.addingTimeInterval(mins * 60), earlierplus >= now {
-            logger.debug("last ble update was less than \(mins) minutes ago, aborting loop update")
+        // Leave a small tolerance around the sensor's nominal 1- or 5-minute cadence.
+        let minimumUpdateInterval = Features.currentMinimumDirectUpdateInterval
+        if let nextAllowedUpdate = lastDirectUpdate?.addingTimeInterval(minimumUpdateInterval), nextAllowedUpdate >= now {
+            logger.debug("last BLE update was less than \(minimumUpdateInterval) seconds ago, aborting Loop update")
             //self.logDeviceCommunication("Sensor didUpdate (not used) \(bleData)", type: .receive)
             return
         }
@@ -83,7 +83,7 @@ extension LibreTransmitterManagerV3 {
         var newGlucose : [NewGlucoseSample] = glucosesToSamplesFilter(glucose, startDate: getStartDateForFilter())
         // For libre2 bluetooth we do need all trend elements to calculate trendarrow,
         // but we can't report all those trends back to loop
-        if let newest = newGlucose.first {
+        if let newest = newGlucose.last {
             newGlucose = [newest]
         }
 
