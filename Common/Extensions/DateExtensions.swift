@@ -40,10 +40,6 @@ public extension Date {
         return date
     }
 
-    static var LocaleWantsAMPM: Bool {
-        DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: NSLocale.current)!.contains("a")
-    }
-
     func getFormattedDate(format: String) -> String {
         let dateformat = DateFormatter()
         dateformat.dateFormat = format
@@ -64,48 +60,5 @@ public extension Date {
         // Calculate the progress made so far as a percentage of the total time
         return  (elapsed / totalTime) * 100
            
-    }
-}
-
-extension DateComponents {
-    func ToTimeString(wantsAMPM: Bool = Date.LocaleWantsAMPM) -> String {
-        // print("hour: \(self.hour) minute: \(self.minute)")
-        let date = Calendar.current.date(bySettingHour: self.hour ?? 0, minute: self.minute ?? 0, second: 0, of: Date())!
-
-        let formatter = DateFormatter()
-        formatter.dateStyle = DateFormatter.Style.long
-        formatter.timeStyle = DateFormatter.Style.medium
-
-        formatter.dateFormat = wantsAMPM ? "hh:mm a" : "HH:mm"
-        return formatter.string(from: date)
-    }
-}
-
-extension Array where Element == DateInterval {
-    // Check for intersection among the intervals in the given array and return
-    // the interval if found.
-    func intersect() -> DateInterval? {
-        // Algorithm:
-        // We will compare first two intervals.
-        // If an intersection is found, we will save the resultant interval
-        // and compare it with the next interval in the array.
-        // If no intersection is found at any iteration
-        // it means the intervals in the array are disjoint. Break the loop and return nil
-        // Otherwise return the last intersection.
-
-        var previous = self.first
-        for (index, element) in self.enumerated() {
-            if index == 0 {
-                continue
-            }
-
-            previous = previous?.intersection(with: element)
-
-            if previous == nil {
-                break
-            }
-        }
-
-        return previous
     }
 }

@@ -9,14 +9,6 @@
 import SwiftUI
 import LocalAuthentication
 
-extension View {
-    func hideKeyboardPreIos16() {
-        if #unavailable(iOS 16.0) {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
-    }
-}
-
 struct LeadingImage: View {
     
     var image: UIImage
