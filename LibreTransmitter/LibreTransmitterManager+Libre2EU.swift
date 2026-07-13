@@ -91,6 +91,14 @@ extension LibreTransmitterManagerV3 {
             self.countTimesWithoutData &+= 1
         } else {
             self.latestBackfill = glucose.max { $0.startDate < $1.startDate }
+            if let latestBackfill, let newestSample = newGlucose.first {
+                self.glucoseDisplay = ConcreteGlucoseDisplayable(
+                    isStateValid: latestBackfill.isStateValid,
+                    trendType: newestSample.trend,
+                    isLocal: true,
+                    trendRate: newestSample.trendRate
+                )
+            }
             self.latestPrediction =  self.createBloodSugarPrediction(bleData.trend, calibration: calibrationData)
             self.logger.debug("latestbackfill set to \(self.latestBackfill.debugDescription)")
             self.countTimesWithoutData = 0

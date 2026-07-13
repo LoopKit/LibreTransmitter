@@ -21,5 +21,5 @@ public struct ConcreteGlucoseDisplayable: GlucoseDisplayable {
 
     // public var batteries : [(name: String, percentage: Int)]?
 
-    public var trendRate: LoopQuantity? { nil }
+    public var trendRate: LoopQuantity?
 }

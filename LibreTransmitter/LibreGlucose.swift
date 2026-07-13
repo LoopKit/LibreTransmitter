@@ -57,6 +57,9 @@ extension LibreGlucose: GlucoseValue {
 }
 
 extension LibreGlucose {
+    private static let preferredTrendInterval: TimeInterval = 5 * 60
+    private static let allowedTrendInterval: ClosedRange<TimeInterval> = (4 * 60)...(6 * 60)
+
     static func calculateSlope(current: Self, last: Self) -> Double {
         if current.timestamp == last.timestamp {
             return 0.0
@@ -70,6 +73,31 @@ extension LibreGlucose {
 
     static func calculateSlopeByMinute(current: Self, last: Self) -> Double {
         return calculateSlope(current: current, last: last) * 60_000
+    }
+
+    static func calculateRecentTrend(in glucoses: [Self]) -> (trend: GlucoseTrend, rate: Double)? {
+        let sortedGlucoses = glucoses.sorted { $0.startDate > $1.startDate }
+        guard let newest = sortedGlucoses.first else {
+            return nil
+        }
+
+        let reference = sortedGlucoses.dropFirst()
+            .filter {
+                allowedTrendInterval.contains(newest.startDate.timeIntervalSince($0.startDate))
+            }
+            .min {
+                abs(newest.startDate.timeIntervalSince($0.startDate) - preferredTrendInterval) <
+                    abs(newest.startDate.timeIntervalSince($1.startDate) - preferredTrendInterval)
+            }
+
+        guard let reference else {
+            return nil
+        }
+
+        return (
+            trend: newest.GetGlucoseTrend(last: reference),
+            rate: calculateSlopeByMinute(current: newest, last: reference)
+        )
     }
 
     static func GetGlucoseTrend(current: Self?, last: Self?) -> GlucoseTrend {

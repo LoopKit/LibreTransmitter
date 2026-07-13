@@ -191,7 +191,7 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
                 trend = oldIsRecentEnough ? newValue.GetGlucoseTrend(last: oldValue) : nil
 
-                self.glucoseDisplay = ConcreteGlucoseDisplayable(isStateValid: newValue.isStateValid, trendType: trend, isLocal: true)
+                self.glucoseDisplay = ConcreteGlucoseDisplayable(isStateValid: newValue.isStateValid, trendType: trend, isLocal: true, trendRate: nil)
             } else {
                 // could consider setting this to ConcreteSensorDisplayable with trendtype GlucoseTrend.flat, but that would be kinda lying
                 self.glucoseDisplay = nil
@@ -473,22 +473,24 @@ extension LibreTransmitterManagerV3 {
     }
 
     func glucosesToSamplesFilter(_ array: [LibreGlucose], startDate: Date?, calculateTrends: Bool = true) -> [NewGlucoseSample] {
-        let glucoses = array.filter { $0.isStateValid }
-        
-        let newest = glucoses.first
-        let oldest = glucoses.last
-        
-        var trend: GlucoseTrend?
-        
-        if calculateTrends, let newest, let oldest, oldest != newest {
-            trend = newest.GetGlucoseTrend(last: oldest)
-            logger.debug("creating trendarrow from glucoses: newest: \(String(describing:newest)) oldest: \(String(describing: oldest)) ")
-        } else {
-            logger.debug("Not creating trendarrow for remote uploada")
-            trend = .none
+        let glucoses = array
+            .filter { $0.isStateValid }
+            .sorted { $0.startDate > $1.startDate }
+
+        let trendCalculation = calculateTrends ? LibreGlucose.calculateRecentTrend(in: glucoses) : nil
+        let trend = trendCalculation?.trend
+        let trendRate = trendCalculation.map {
+            LoopQuantity(unit: .milligramsPerDeciliterPerMinute, doubleValue: $0.rate)
         }
-        logger.debug("tried creating trendarrow using \(glucoses.count) elements for trend calc")
-        
+
+        if !calculateTrends {
+            logger.debug("trend arrow calculation disabled for these samples")
+        } else if let trendCalculation {
+            logger.debug("created trend arrow \(trendCalculation.trend.symbol) at \(trendCalculation.rate) mg/dL/min using recent smoothed glucose")
+        } else {
+            logger.debug("not creating trend arrow because no valid 4-6 minute comparison is available")
+        }
+
         return glucoses
             // filterDateRange uses a binary search that requires ascending order;
             // these glucoses are newest-first, so sort before filtering.
@@ -500,7 +502,7 @@ extension LibreTransmitterManagerV3 {
                     quantity: $0.quantity,
                     condition: nil,
                     trend: trend,
-                    trendRate: nil,
+                    trendRate: trendRate,
                     isDisplayOnly: false,
                     wasUserEntered: false,
                     syncIdentifier: $0.syncId,
