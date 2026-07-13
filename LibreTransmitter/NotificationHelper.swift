@@ -7,8 +7,6 @@
 //
 
 import Foundation
-import LoopAlgorithm
-import LoopKit
 import UserNotifications
 import os.log
 
@@ -18,7 +16,6 @@ public enum NotificationHelper {
 
     private enum Identifiers: String {
         case noSensorDetected = "com.loopkit.libremiaomiao.nosensordetected-notification"
-        case tryAgainLater = "com.loopkit.libremiaomiao.glucoseNotAvailableTryAgainLater-notification"
         case sensorChange = "com.loopkit.libremiaomiao.sensorchange-notification"
         case invalidSensor = "com.loopkit.libremiaomiao.invalidsensor-notification"
         case lowBattery = "com.loopkit.libremiaomiao.lowbattery-notification"
@@ -29,10 +26,6 @@ public enum NotificationHelper {
         case libre2directFinishedSetup = "com.loopkit.libremiaomiao.libre2direct-notification"
     }
     
-    public static func GlucoseUnitIsSupported(unit: LoopUnit) -> Bool {
-        [LoopUnit.milligramsPerDeciliter, LoopUnit.millimolesPerLiter].contains(unit)
-    }
-
     private static func ensureCanSendNotification(_ completion: @escaping () -> Void ) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             guard settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional else {
@@ -120,18 +113,6 @@ public extension NotificationHelper {
         }
     }
 
-    static func sendSensorTryAgainLaterNotification() {
-        ensureCanSendNotification {
-            let content = UNMutableNotificationContent()
-            content.title = "Invalid Glucose sample detected, try again later"
-            content.body = "Sensor might have temporarily stopped, fallen off or is too cold or too warm"
-
-            addRequest(identifier: .tryAgainLater, content: content)
-            // content.sound = UNNotificationSound.
-
-        }
-    }
-
     static func sendInvalidSensorNotificationIfNeeded(sensorData: SensorData) {
         let isValid = sensorData.isLikelyLibre1FRAM && (sensorData.state == .starting || sensorData.state == .ready)
 
@@ -144,8 +125,6 @@ public extension NotificationHelper {
     }
 
     enum CalibrationMessage: String {
-        case starting = "Calibrating sensor, please stand by!"
-        case noCalibration = "Could not calibrate sensor, check libreoopweb permissions and internet connection"
         case invalidCalibrationData = "Could not calibrate sensor, invalid calibrationdata"
         case success = "Success!"
     }

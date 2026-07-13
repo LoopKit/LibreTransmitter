@@ -8,7 +8,6 @@
 
 import SwiftUI
 import LibreTransmitter
-import LoopKitUI
 
 struct NotificationSettingsView: View {
     private enum Key: String {
