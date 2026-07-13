@@ -20,7 +20,7 @@ struct GlucoseSettingsView: View {
 
     @State private var authSuccess = false
     @State private var showingMinuteByMinuteWarning = false
-    @State private var minuteByMinuteForwardingEnabled = Features.allowOneMinuteReadings
+    @AppStorage(Features.allowOneMinuteReadingsKey) private var minuteByMinuteForwardingEnabled = false
     
     // Set this to true to require system authentication
     // for accessing the glucose section
@@ -43,7 +43,6 @@ struct GlucoseSettingsView: View {
                         if enabled {
                             showingMinuteByMinuteWarning = true
                         } else {
-                            Features.allowOneMinuteReadings = false
                             minuteByMinuteForwardingEnabled = false
                         }
                     }
@@ -82,7 +81,6 @@ struct GlucoseSettingsView: View {
         }
         .sheet(isPresented: $showingMinuteByMinuteWarning) {
             MinuteByMinuteForwardingWarning {
-                Features.allowOneMinuteReadings = true
                 minuteByMinuteForwardingEnabled = true
                 showingMinuteByMinuteWarning = false
             } onCancel: {

@@ -12,7 +12,7 @@ import CoreNFC
 
 public final class Features {
 
-    private static let allowOneMinuteReadingsKey = "com.loopkit.libre.experimentalMinuteByMinuteForwarding"
+    static public let allowOneMinuteReadingsKey = "com.loopkit.libre.experimentalMinuteByMinuteForwarding"
 
     static public var logSubsystem = "com.loopkit.libre"
     
