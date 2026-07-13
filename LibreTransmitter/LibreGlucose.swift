@@ -65,7 +65,7 @@ extension LibreGlucose {
         let _curr = Double(current.timestamp.timeIntervalSince1970 * 1_000)
         let _last = Double(last.timestamp.timeIntervalSince1970 * 1_000)
 
-        return (Double(last.unsmoothedGlucose) - Double(current.unsmoothedGlucose)) / (_last - _curr)
+        return (last.glucoseDouble - current.glucoseDouble) / (_last - _curr)
     }
 
     static func calculateSlopeByMinute(current: Self, last: Self) -> Double {
@@ -94,7 +94,7 @@ extension LibreGlucose {
         case _ where s <= (3.5):
             return .upUp
         case _ where s <= (40):
-            return .flat // flat is the new (tm) "unknown"!
+            return .upUpUp
 
         default:
 
