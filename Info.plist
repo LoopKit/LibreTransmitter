@@ -26,5 +26,7 @@
 	<string>FreeStyle Libre Demo</string>
 	<key>com.loopkit.Loop.CGMManagerIdentifier</key>
 	<string>LibreDemoCGMManager</string>
+	<key>com.loopkit.Loop.DeviceManufacturer</key>
+	<string>Abbott</string>
 </dict>
 </plist>
