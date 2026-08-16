@@ -152,7 +152,7 @@ extension LibreGlucose {
             }
         }
 
-        if shouldSmoothGlucose {
+        if shouldSmoothGlucose && !Features.allowOneMinuteReadings {
             arr = CalculateSmothedData5Points(origtrends: arr)
         } else {
             for i in 0 ..< arr.count {
