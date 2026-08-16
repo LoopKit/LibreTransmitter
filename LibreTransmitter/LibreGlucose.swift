@@ -125,10 +125,11 @@ extension LibreGlucose {
         return arr
     }
 
-    static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
+    /// - parameter smoothGlucose: false when every reading is forwarded (minute-by-minute mode)
+    static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo, smoothGlucose: Bool = true) -> [LibreGlucose] {
         var arr = [LibreGlucose]()
 
-        var shouldSmoothGlucose = true
+        var shouldSmoothGlucose = smoothGlucose
         for trend in measurements {
             // trend arrows on each libreglucose value is not needed
             // instead we calculate it once when latestbackfill is set, which in turn sets

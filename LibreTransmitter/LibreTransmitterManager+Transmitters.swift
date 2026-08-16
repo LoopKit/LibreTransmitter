@@ -21,6 +21,8 @@ extension LibreTransmitterManagerV3 {
         self.logger.debug("got sensordata: \(String(describing: sensorData)), bytescount: \( sensorData.bytes.count), bytes: \(sensorData.bytes)")
         var sensorData = sensorData
 
+        recordConnectionKind(isLibre2Direct: false)
+
         NotificationHelper.sendLowBatteryNotificationIfNeeded(device: Device)
         self.setObservables(sensorData: nil, bleData: nil, metaData: Device)
 

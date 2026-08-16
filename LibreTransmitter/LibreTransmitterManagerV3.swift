@@ -234,11 +234,70 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
         self.init()
         logger.debug("LibreTransmitterManager  has run init from rawstate")
-        
+        self.experimentalMinuteByMinuteForwarding = rawState[Self.minuteByMinuteForwardingKey] as? Bool ?? false
+        self.lastKnownLibre2DirectConnection = rawState[Self.libre2DirectConnectionKey] as? Bool
+
     }
 
     public var rawState: CGMManager.RawStateValue {
-        [:]
+        var raw = CGMManager.RawStateValue()
+        if experimentalMinuteByMinuteForwarding {
+            raw[Self.minuteByMinuteForwardingKey] = true
+        }
+        if let lastKnownLibre2DirectConnection {
+            raw[Self.libre2DirectConnectionKey] = lastKnownLibre2DirectConnection
+        }
+        return raw
+    }
+
+    private static let minuteByMinuteForwardingKey = "experimentalMinuteByMinuteForwarding"
+    private static let libre2DirectConnectionKey = "isLibre2DirectConnection"
+
+    /// Experimental minute-by-minute forwarding: send every reading the sensor
+    /// produces (~1/min) instead of throttling to the ~5 minute cadence the
+    /// loop algorithms were designed against. Persisted in `rawState`.
+    ///
+    /// Only the libre2 direct bluetooth connection produces a reading every
+    /// minute, so the effective value (`allowOneMinuteReadings`) is false for
+    /// third party transmitters even when this was enabled earlier while
+    /// running a libre2 sensor directly.
+    public private(set) var experimentalMinuteByMinuteForwarding: Bool = false
+
+    private var lastKnownLibre2DirectConnection: Bool?
+
+    public var isLibre2DirectConnection: Bool {
+        if let lastKnownLibre2DirectConnection {
+            return lastKnownLibre2DirectConnection
+        }
+        return UserDefaults.standard.preSelectedUid != nil || UserDefaults.standard.preSelectedSensor != nil
+    }
+
+    /// The effective setting: what the glucose pipeline should act on.
+    public var allowOneMinuteReadings: Bool {
+        isLibre2DirectConnection && experimentalMinuteByMinuteForwarding
+    }
+
+    public func setExperimentalMinuteByMinuteForwarding(_ enabled: Bool) {
+        guard experimentalMinuteByMinuteForwarding != enabled else { return }
+
+        experimentalMinuteByMinuteForwarding = enabled
+        logger.debug("experimentalMinuteByMinuteForwarding set to \(enabled)")
+        notifyDelegateOfStateChange()
+    }
+
+    func recordConnectionKind(isLibre2Direct: Bool) {
+        guard lastKnownLibre2DirectConnection != isLibre2Direct else { return }
+
+        lastKnownLibre2DirectConnection = isLibre2Direct
+        logger.debug("connection kind recorded as \(isLibre2Direct ? "libre2 direct" : "transmitter")")
+        notifyDelegateOfStateChange()
+    }
+
+    private func notifyDelegateOfStateChange() {
+        delegateQueue?.async { [weak self] in
+            guard let self else { return }
+            self.cgmManagerDelegate?.cgmManagerDidUpdateState(self)
+        }
     }
 
     open var localizedTitle: String { "FreeStyle Libre" }

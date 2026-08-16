@@ -42,6 +42,7 @@ extension LibreTransmitterManagerV3: CGMManagerUI {
         let wantToRestablishConnectionNotifier = GenericObservableObject()
 
         let settingsView = SettingsView(
+            cgmManager: self,
             transmitterInfo: self.transmitterInfoObservable,
             sensorInfo: self.sensorInfoObservable,
             glucoseMeasurement: self.glucoseInfoObservable,
@@ -58,6 +59,7 @@ extension LibreTransmitterManagerV3: CGMManagerUI {
             content: settingsView
                 .navigationTitle(self.localizedTitle)
                 .environmentObject(displayGlucosePreference)
+                .environment(\.appName, Bundle.main.bundleDisplayName)
         )
 
         let nav = CGMManagerSettingsNavigationViewController(rootViewController: hostedView)

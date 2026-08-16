@@ -49,6 +49,7 @@ public struct SettingsItem: View {
 
 struct SettingsView: View {
     @EnvironmentObject private var displayGlucosePreference: DisplayGlucosePreference
+    @Environment(\.appName) private var appName
 
     var longDateFormatter: DateFormatter = ({
         let df = DateFormatter()
@@ -72,13 +73,18 @@ struct SettingsView: View {
     @ObservedObject var alarmStatus: LibreTransmitter.AlarmStatus
 
     @State private var showingDestructQuestion = false
+    @State private var showingMinuteByMinuteWarning = false
+    @State private var minuteByMinuteForwardingEnabled: Bool
     // @State private var showingExporter = false
     // @Environment(\.presentationMode) var presentationMode
 
     var pairingService: SensorPairingProtocol
     var bluetoothSearcher: BluetoothSearcher
 
+    private let cgmManager: LibreTransmitterManagerV3
+
     init(
+        cgmManager: LibreTransmitterManagerV3,
         transmitterInfo: LibreTransmitter.TransmitterInfo,
         sensorInfo: LibreTransmitter.SensorInfo,
         glucoseMeasurement: LibreTransmitter.GlucoseInfo,
@@ -90,6 +96,8 @@ struct SettingsView: View {
         pairingService: SensorPairingProtocol,
         bluetoothSearcher: BluetoothSearcher)
     {
+        self.cgmManager = cgmManager
+        self._minuteByMinuteForwardingEnabled = State(initialValue: cgmManager.experimentalMinuteByMinuteForwarding)
         self.transmitterInfo = transmitterInfo
         self.sensorInfo = sensorInfo
         self.glucoseMeasurement = glucoseMeasurement
@@ -132,11 +140,26 @@ struct SettingsView: View {
                         print("edit calibration clicked")
                     }
                 }
+                if cgmManager.isLibre2DirectConnection {
+                    forwardingSection
+                }
                 advancedSection
                 sensorChangeSection
                 destructSection
                 
             }.listStyle(InsetGroupedListStyle())
+            // The sheet must be attached at the List level. Attached inside a
+            // Section, the List rebuilds its rows on the state change and
+            // dismisses the sheet immediately.
+            .sheet(isPresented: $showingMinuteByMinuteWarning) {
+                MinuteByMinuteWarningSheet(
+                    onEnable: {
+                        setMinuteByMinuteForwarding(true)
+                        showingMinuteByMinuteWarning = false
+                    },
+                    onCancel: { showingMinuteByMinuteWarning = false }
+                )
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     doneButton
@@ -255,6 +278,36 @@ struct SettingsView: View {
             }
 
         }
+    }
+
+    /// Toggle for the per-minute experimental forwarding mode. Default is
+    /// off (readings throttled to ~5 min) because the loop algorithms were
+    /// designed against 5-minute CGM input. Turning it on requires the user
+    /// to read the warning sheet. Only shown for the libre2 direct bluetooth
+    /// connection, the only mode that produces a reading every minute.
+    var forwardingSection: some View {
+        Section(header: Text(String(format: LocalizedString("Forwarding to %1$@", comment: "Text describing header for forwarding section (1: appName)"), appName))) {
+            Toggle(LocalizedString("Send every reading (experimental)", comment: "Experimental minute-by-minute forwarding toggle"), isOn: Binding(
+                get: { minuteByMinuteForwardingEnabled },
+                set: { newValue in
+                    if newValue {
+                        showingMinuteByMinuteWarning = true
+                    } else {
+                        setMinuteByMinuteForwarding(false)
+                    }
+                }
+            ))
+            Text(minuteByMinuteForwardingEnabled
+                 ? String(format: LocalizedString("Every reading from the sensor (~1/min) is sent to %1$@.", comment: "Forwarding footer: minute-by-minute on (1: appName)"), appName)
+                 : String(format: LocalizedString("Only one reading every ~5 minutes is sent to %1$@, matching the cadence other CGMs use.", comment: "Forwarding footer: minute-by-minute off (1: appName)"), appName))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    private func setMinuteByMinuteForwarding(_ enabled: Bool) {
+        cgmManager.setExperimentalMinuteByMinuteForwarding(enabled)
+        minuteByMinuteForwardingEnabled = enabled
     }
 
     var advancedSection: some View {
@@ -459,6 +512,59 @@ struct SettingsView: View {
         }
     }
 
+}
+
+struct MinuteByMinuteWarningSheet: View {
+    let onEnable: () -> Void
+    let onCancel: () -> Void
+    @Environment(\.appName) private var appName
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Label(LocalizedString("Experimental setting", comment: "Minute-by-minute warning header"), systemImage: "exclamationmark.triangle.fill")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(.orange)
+
+                    Text(String(format: LocalizedString("%1$@'s algorithm was designed and tuned against CGMs that emit a new reading every 5 minutes. With this setting on, %1$@ receives a new reading from the sensor every minute instead.", comment: "Minute-by-minute warning paragraph 1 (1: appName)"), appName))
+                    Text(String(format: LocalizedString("This can change how %1$@ reacts to glucose movement compared to default behavior:", comment: "Minute-by-minute warning paragraph 2 (1: appName)"), appName))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(String(format: LocalizedString("• Dosing decisions may shift sooner or further than what %1$@'s review and tuning guidance assumes.", comment: "Minute-by-minute warning bullet 1 (1: appName)"), appName))
+                        Text(LocalizedString("• Trend math, retrospective correction, and momentum effects were validated at the 5-minute cadence.", comment: "Minute-by-minute warning bullet 2"))
+                        Text(LocalizedString("• Readings are sent unsmoothed, so single-reading noise is passed on as-is.", comment: "Minute-by-minute warning bullet 3"))
+                        Text(LocalizedString("• You're accepting responsibility for monitoring outcomes more closely while this is on.", comment: "Minute-by-minute warning bullet 4"))
+                    }
+                    .font(.callout)
+                    Text(LocalizedString("Leave this off unless you understand the implications. You can turn it off again at any time.", comment: "Minute-by-minute warning footer"))
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+            }
+            .navigationBarTitle(Text(LocalizedString("Send every reading", comment: "Minute-by-minute warning screen title")), displayMode: .inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(LocalizedString("Cancel", comment: "Cancel button"), action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(LocalizedString("Enable", comment: "Enable button"), action: onEnable)
+                        .foregroundColor(.red)
+                }
+            }
+        }
+    }
+}
+
+extension Bundle {
+    /// The host app's display name (Loop, iAPS, Trio, a rebrand, …).
+    /// `Bundle.main` is the running app, not this plugin, so this resolves to
+    /// whatever app embedded LibreTransmitter.
+    var bundleDisplayName: String {
+        object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+            ?? object(forInfoDictionaryKey: "CFBundleName") as? String
+            ?? "Loop"
+    }
 }
 
 struct SettingsOverview_Previews: PreviewProvider {
