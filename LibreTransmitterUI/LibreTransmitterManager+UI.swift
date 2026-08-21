@@ -129,6 +129,10 @@ extension LibreTransmitterManagerV3: DeviceManagerUI {
         nil
     }
 
+    public static var pickerImage: UIImage? {
+        UIImage(named: "libresensor200", in: Bundle.current, compatibleWith: nil)
+    }
+
     public var smallImage: UIImage? {
        self.getSmallImage()
     }
