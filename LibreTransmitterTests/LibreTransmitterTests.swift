@@ -26,6 +26,22 @@ class LibreTransmitterTests: XCTestCase {
         XCTAssertEqual(Features.minimumDirectUpdateInterval(oneMinuteReadingsEnabled: false), 270)
     }
 
+    func testGlucoseSmoothingDefaultsToEnabled() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        XCTAssertTrue(defaults.glucoseSmoothingEnabled)
+    }
+
+    func testGlucoseSmoothingCanBeDisabled() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        defaults.glucoseSmoothingEnabled = false
+
+        XCTAssertFalse(defaults.glucoseSmoothingEnabled)
+    }
+
     func testTrendUsesSmoothedGlucoseValues() {
         let current = glucose(minutes: 0, unsmoothed: 200, smoothed: 110)
         let previous = glucose(minutes: -5, unsmoothed: 100, smoothed: 100)

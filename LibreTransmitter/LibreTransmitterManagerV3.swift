@@ -486,7 +486,7 @@ extension LibreTransmitterManagerV3 {
         if !calculateTrends {
             logger.debug("trend arrow calculation disabled for these samples")
         } else if let trendCalculation {
-            logger.debug("created trend arrow \(trendCalculation.trend.symbol) at \(trendCalculation.rate) mg/dL/min using recent smoothed glucose")
+            logger.debug("created trend arrow \(trendCalculation.trend.symbol) at \(trendCalculation.rate) mg/dL/min using recent processed glucose")
         } else {
             logger.debug("not creating trend arrow because no valid 4-6 minute comparison is available")
         }

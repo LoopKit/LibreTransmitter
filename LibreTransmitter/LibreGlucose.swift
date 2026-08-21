@@ -180,9 +180,24 @@ extension LibreGlucose {
             }
         }
 
-        if shouldSmoothGlucose {
+        let smoothingEnabled = UserDefaults.standard.glucoseSmoothingEnabled
+        if shouldSmoothGlucose && smoothingEnabled {
+            logger.debug("Glucose smoothing applied to \(arr.count) trend readings")
             arr = CalculateSmothedData5Points(origtrends: arr)
+        } else if shouldSmoothGlucose {
+            let smoothedReadings = CalculateSmothedData5Points(origtrends: arr)
+            let smoothingDifferences = zip(arr, smoothedReadings)
+                .map { pair in
+                    let (raw, smoothed) = pair
+                    return "\(raw.timestamp)=\(smoothed.glucoseDouble - raw.unsmoothedGlucose) mg/dL"
+                }
+                .joined(separator: ", ")
+            logger.debug("Glucose smoothing disabled; timestamp differences: \(smoothingDifferences)")
+            for i in 0 ..< arr.count {
+                arr[i].glucoseDouble = arr[i].unsmoothedGlucose
+            }
         } else {
+            logger.debug("Glucose smoothing skipped because the trend batch contains an invalid reading")
             for i in 0 ..< arr.count {
                 arr[i].glucoseDouble = arr[i].unsmoothedGlucose
             }
