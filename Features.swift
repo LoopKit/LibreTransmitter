@@ -17,7 +17,7 @@ public final class Features {
     static public var glucoseSettingsRequireAuthentication = false
     static public var alarmSettingsViewRequiresAuthentication = false
     
-    static public var allowsEditingFactoryCalibrationData = false
+    static public var allowsEditingFactoryCalibrationData = true
     static public var allowOneMinuteReadings = false
     
     // Uses Vibration through apples audio api for glucose alarms. This could be considered an api abuse from apple's standpoint;
