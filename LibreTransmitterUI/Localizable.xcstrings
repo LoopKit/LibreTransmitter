@@ -1659,7 +1659,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sigur doriți să ștergeți acest CGM?"
+            "value" : "Sigur doriți să ștergeți acest senzor de glicemie?"
           }
         },
         "ru" : {
@@ -1701,7 +1701,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "确定删除该 CGM？"
+            "value" : "您确定要删除此 CGM 吗？"
           }
         }
       }
@@ -1802,7 +1802,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sunteți sigur că doriți să eliminați acest CGM din Loop?"
+            "value" : "Sunteți sigur că doriți să eliminați acest senzor de glicemie din Loop?"
           }
         },
         "ru" : {
@@ -3582,7 +3582,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "密钥"
+            "value" : "证书"
           }
         }
       }
@@ -4701,7 +4701,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ștergeți CGM"
+            "value" : "Ștergeți senzorul de glicemie"
           }
         },
         "ru" : {
@@ -4743,7 +4743,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "趋势"
+            "value" : "删除CGM"
           }
         }
       }
