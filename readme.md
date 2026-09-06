@@ -19,7 +19,6 @@ This is a https://github.com/loopkit/loop plugin for connecting to libresensors 
 * Glucose values can be uploaded to nightscout automatically by Loop
 * Optional: Backfill the last 16 minutes of data (recommend to turn off)
 * Optional: Backfill the last 8 hours of data (15 minute cadence)
-* Glucose data is smoothed to avoid noise, using a 5 point moving average filter
 * Official algorithm implements glucose prediction, to align cgm values with blood values; this feature is deliberately removed from this implementation
 * Glucose readout interval: 5 minutes
 * Glucose alarms

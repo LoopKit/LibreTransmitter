@@ -115,19 +115,22 @@ struct CalibrationEditView: View {
     
 
     var body: some View {
-        if !Features.allowsEditingFactoryCalibrationData {
-            NotificationView(text: "To modify these settings you need to modify the code to allow it")
-        }
         List {
+            if !Features.allowsEditingFactoryCalibrationData {
+                Section {
+                    NotificationView(text: "To modify these settings you need to modify the code to allow it")
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+            }
             calibrationInputsSections
             validForSection
             if Features.allowsEditingFactoryCalibrationData {
                 saveButtonSection
             }
-            
+
         }
         .listStyle(InsetGroupedListStyle())
-        .navigationBarTitle(Features.allowsEditingFactoryCalibrationData ? "Calibration Edit" : "Calibration Details")
     }
 
     @ObservedObject private var newParams: Params

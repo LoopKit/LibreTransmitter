@@ -729,6 +729,9 @@
         }
       }
     },
+    "FreeStyle Libre" : {
+      "comment" : "Generic fallback title for the CGM settings screen before a sensor type is known"
+    },
     "g" : {
       "comment" : "The short unit display string for grams",
       "localizations" : {
@@ -1760,6 +1763,69 @@
           }
         }
       }
+    },
+    "Sensor Expired" : {
+      "comment" : "Title for sensor expired alert"
+    },
+    "Sensor expired. Replace your sensor now." : {
+      "comment" : "Body for sensor expired alert"
+    },
+    "Sensor Malfunction" : {
+      "comment" : "Title for sensor malfunction alert"
+    },
+    "Sensor malfunction. Replace your sensor now." : {
+      "comment" : "Body for sensor malfunction alert"
+    },
+    "Sensor Not Detected" : {
+      "comment" : "Title for sensor not detected alert"
+    },
+    "Sensor not detected or reporting as invalid. If this continues, remove and re-pair it." : {
+      "comment" : "Body for sensor not detected alert"
+    },
+    "Signal Loss" : {
+      "comment" : "Title for signal loss sensor alert"
+    },
+    "Signal lost. Check that your sensor is nearby and Bluetooth is on." : {
+      "comment" : "Body for signal loss sensor alert"
+    },
+    "A single reading changed too abruptly to be physiologically plausible and was discarded." : {
+      "comment" : "Description for PEAK_DELTA_EXCEEDED sensor measurement error: one anomalous sample-to-sample spike, rejected as an implausible single-reading jump"
+    },
+    "Glucose is changing faster than physiologically plausible; readings are being discarded until it stabilizes." : {
+      "comment" : "Description for AVG_DELTA_EXCEEDED sensor measurement error: rate of change over several readings too fast to trust"
+    },
+    "Radio signal interference detected." : {
+      "comment" : "Placeholder description for RF sensor measurement error"
+    },
+    "Reading changed too abruptly to trust." : {
+      "comment" : "Placeholder description for FILTER_DELTA sensor measurement error"
+    },
+    "Sensor data buffer overflow." : {
+      "comment" : "Placeholder description for SD14_FIFO_OVERFLOW sensor measurement error"
+    },
+    "Sensor data failed validation and can't be processed." : {
+      "comment" : "Description for INVALID_DATA sensor measurement error: corrupt or inconsistent payload/frame"
+    },
+    "Sensor reference resistance out of range." : {
+      "comment" : "Placeholder description for REF_R sensor measurement error"
+    },
+    "Sensor signal is saturated and can't be converted to a glucose value." : {
+      "comment" : "Description for SIGNAL_SATURATED sensor measurement error: raw signal clipped at its maximum"
+    },
+    "Sensor signal is too weak to measure reliably." : {
+      "comment" : "Description for SENSOR_SIGNAL_LOW sensor measurement error: weak/degraded electrochemical signal, e.g. failing sensor or poor insertion"
+    },
+    "Sensor is too cold to measure glucose. This should resolve on its own within a few minutes." : {
+      "comment" : "Description for TEMP_LOW sensor measurement error, matching Abbott's own \"Sensor Too Cold\" wording"
+    },
+    "Sensor is too hot to measure glucose. This should resolve on its own within a few minutes." : {
+      "comment" : "Description for TEMP_HIGH sensor measurement error, matching Abbott's own \"Sensor Too Hot\" wording"
+    },
+    "Sensor working voltage out of range." : {
+      "comment" : "Placeholder description for WORK_VOLTAGE sensor measurement error"
+    },
+    "Sensor's temperature sensor is reporting an implausible value." : {
+      "comment" : "Description for THERMISTOR_OUT_OF_RANGE sensor measurement error: raw thermistor reading outside its plausible electrical range - a hardware fault, not a temporary condition"
     },
     "U" : {
       "comment" : "The short unit display string for international units of insulin",

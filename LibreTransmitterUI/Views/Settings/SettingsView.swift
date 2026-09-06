@@ -49,6 +49,7 @@ public struct SettingsItem: View {
 
 struct SettingsView: View {
     @EnvironmentObject private var displayGlucosePreference: DisplayGlucosePreference
+    @Environment(\.guidanceColors) private var guidanceColors
 
     var longDateFormatter: DateFormatter = ({
         let df = DateFormatter()
@@ -67,9 +68,10 @@ struct SettingsView: View {
     @ObservedObject private var notifyDelete: GenericObservableObject
     @ObservedObject private var notifyReset: GenericObservableObject
     @ObservedObject private var notifyReconnect: GenericObservableObject
+    @ObservedObject private var notifyShowDeviceDetails: GenericObservableObject
+    @ObservedObject private var notifyShowCalibrations: GenericObservableObject
 
     @State private var presentableStatus: StatusMessage?
-    @ObservedObject var alarmStatus: LibreTransmitter.AlarmStatus
 
     @State private var showingDestructQuestion = false
     // @State private var showingExporter = false
@@ -86,7 +88,8 @@ struct SettingsView: View {
         notifyDelete: GenericObservableObject,
         notifyReset: GenericObservableObject,
         notifyReconnect: GenericObservableObject,
-        alarmStatus: LibreTransmitter.AlarmStatus,
+        notifyShowDeviceDetails: GenericObservableObject,
+        notifyShowCalibrations: GenericObservableObject,
         pairingService: SensorPairingProtocol,
         bluetoothSearcher: BluetoothSearcher)
     {
@@ -97,45 +100,28 @@ struct SettingsView: View {
         self.notifyDelete = notifyDelete
         self.notifyReset = notifyReset
         self.notifyReconnect = notifyReconnect
-        self.alarmStatus = alarmStatus
+        self.notifyShowDeviceDetails = notifyShowDeviceDetails
+        self.notifyShowCalibrations = notifyShowCalibrations
         self.pairingService = pairingService
         self.bluetoothSearcher = bluetoothSearcher
     }
 
-    private var glucoseUnit: HKUnit {
-        displayGlucosePreference.unit
-    }
-
     static let formatter = NumberFormatter()
 
-    // no navigationview necessary when running inside a uihostingcontroller
-    // uihostingcontroller seems to add a navigationview for us, causing problems if we
-    // also add one herer
     var body: some View {
             List {
                 headerSection
-                snoozeSection
                 measurementSection
-                if let date = glucoseMeasurement.predictionDate, let prediction = glucoseMeasurement.prediction {
-                    Section(header: Text(LocalizedString("Last Blood Sugar prediction", comment: "Text describing header for Blood Sugar prediction section"))) {
-                        SettingsItem(title: "CurrentBG", detail: displayGlucosePreference.format(prediction))
-                        SettingsItem(title: "Date", detail: longDateFormatter.string(from: date) )
-                    }
+
+                sensorInfoSection
+
+                disclosureButton(title: "Device details") {
+                    notifyShowDeviceDetails.notify()
                 }
-                
-                NavigationLink(destination: deviceInfoSection) {
-                    SettingsItem(title: "Device details")
-                }
-                
-                NavigationLink(destination: CalibrationEditView()) {
-                    Button(Features.allowsEditingFactoryCalibrationData ? "Edit calibrations" : "View factory calibrations") {
-                        print("edit calibration clicked")
-                    }
-                }
-                advancedSection
-                sensorChangeSection
+
+                manageSection
                 destructSection
-                
+
             }.listStyle(InsetGroupedListStyle())
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -144,17 +130,20 @@ struct SettingsView: View {
             }
     }
 
-    var snoozeSection: some View {
-        Section {
-            NavigationLink(destination: SnoozeView(isAlarming: $alarmStatus.isAlarming, activeAlarms: $alarmStatus.glucoseScheduleAlarmResult)) {
-                Image(systemName: "pause.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(.blue)
-                Text(LocalizedString("Pause Glucose alarms", comment: "Text for pausing glucose alarms")).frame(alignment: .center)
-                    .foregroundColor(.blue)
-                
+    /// A List row that looks like a NavigationLink (label + disclosure chevron) but triggers
+    /// a plain action instead, for rows whose destination is pushed manually in UIKit.
+    func disclosureButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                SettingsItem(title: title)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(Color(UIColor.tertiaryLabel))
             }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     var measurementSection : some View {
@@ -174,42 +163,13 @@ struct SettingsView: View {
         }
     }
 
-    var deviceInfoSection: some View {
-        List {
-            Section(header: Text(LocalizedString("Device Info", comment: "Text describing header for device info section"))) {
-                if !transmitterInfo.battery.isEmpty {
-                    SettingsItem(title: "Battery", detail: $transmitterInfo.battery )
-                }
-                
-                // The firmware version is not always extractable for all devices
-                // and the libre2 direct version does not support it at all
-                if !transmitterInfo.hardware.isEmpty {
-                    SettingsItem(title: "Hardware", detail: $transmitterInfo.hardware )
-                }
-                // The firmware version is not always extractable for all devices
-                // and the libre2 direct version does not support it at all
-                if !transmitterInfo.firmware.isEmpty {
-                    SettingsItem(title: "Firmware", detail: $transmitterInfo.firmware )
-                }
-                
-                SettingsItem(title: "Connection State", detail: $transmitterInfo.connectionState )
-                SettingsItem(title: "Transmitter Type", detail: $transmitterInfo.transmitterType )
-                
-                // The mac address of a given device is normally not available on ios
-                // Only the bluetooth identifier, which is a normalized derivative of the mac address is available
-                // However, some transmitters, such as the bubble, provide their own mac address as part of its advertisement info
-                // which we extract and put herer
-                if !transmitterInfo.transmitterMacAddress.isEmpty {
-                    SettingsItem(title: "Mac", detail: $transmitterInfo.transmitterMacAddress )
-                }
-                
-                SettingsItem(title: "Sensor Type", detail: $transmitterInfo.sensorType )
-                
-                SettingsItem(title: "Sensor Start", detail: sensorInfo.activatedAtString )
-                SettingsItem(title: "Sensor End", detail: sensorInfo.expiresAtString )
-            }
+    var sensorInfoSection: some View {
+        Section(header: Text(LocalizedString("Sensor Information", comment: "Text describing header for sensor information section"))) {
+            SettingsItem(title: "Sensor Type", detail: $transmitterInfo.sensorType )
+            SettingsItem(title: "Sensor Serial", detail: $sensorInfo.sensorSerial )
+            SettingsItem(title: "Sensor Start", detail: sensorInfo.activatedAtString )
+            SettingsItem(title: "Sensor End", detail: sensorInfo.expiresAtString )
         }
-        .textSelection(.enabled)
     }
 
     private var doneButton: some View {
@@ -218,12 +178,13 @@ struct SettingsView: View {
         })
     }
     
-    var sensorChangeSection: some View {
-        
-        Section {
+    var manageSection: some View {
+        Section(header: Text(LocalizedString("Manage", comment: "Text describing header for manage section"))) {
+            disclosureButton(title: Features.allowsEditingFactoryCalibrationData ? "Edit calibrations" : "View factory calibrations") {
+                notifyShowCalibrations.notify()
+            }
+
             NavigationLink(destination: AuthView(completeNotifier: notifyComplete, notifyReset: notifyReset, notifyReconnect: notifyReconnect, pairingService: pairingService, bluetoothSearcher: bluetoothSearcher)) {
-                /*Button("Change Sensor") {
-                }.foregroundColor(.blue)*/
                 SettingsItem(title: "Change Sensor").foregroundColor(.blue)
             }
         }
@@ -257,31 +218,6 @@ struct SettingsView: View {
         }
     }
 
-    var advancedSection: some View {
-        Section(header: Text(LocalizedString("Configuration", comment: "Text describing header for advanced settings section"))) {
-            // these subviews don't really need to be notified once glucose unit changes
-            // so we just pass glucoseunit directly on init
-            NavigationLink(destination: AlarmSettingsView(glucoseUnit: self.glucoseUnit)) {
-                SettingsItem(title: "Alarms")
-            }
-            
-            if NotificationHelper.criticalAlarmsEnabled {
-                NavigationLink(destination: CriticalAlarmsVolumeView()) {
-                    SettingsItem(title: "Critical Alarms volume")
-                }
-            }
-            
-            NavigationLink(destination: GlucoseSettingsView()) {
-                SettingsItem(title: "Glucose Settings")
-            }
-        
-            NavigationLink(destination: NotificationSettingsView()) {
-                SettingsItem(title: "Notifications")
-            }
-
-        }
-    }
-    
     private var daysRemaining: Int? {
         if let remaining = sensorInfo.expiresAt?.timeIntervalSinceNow, remaining > .days(1) {
             return Int(remaining.days)
@@ -312,14 +248,6 @@ struct SettingsView: View {
                 // .foregroundColor(viewModel.podOk ? .primary : .secondary)
             Text(units).foregroundColor(.secondary)
         }
-    }
-    
-    var sensorIsExpired : Bool {
-        if let expiresAt = sensorInfo.expiresAt {
-            return expiresAt.timeIntervalSinceNow < 0
-        }
-        
-        return false
     }
     
     var showProgress : Bool {
@@ -385,84 +313,106 @@ struct SettingsView: View {
         }.frame(maxWidth: .infinity)
     }
     
-    var sensorStatusText : String {
-        let ret = sensorInfo.sensorState
-        return ret.isEmpty ? " - " : ret
+    private var isConnected: Bool {
+        [BluetoothmanagerState.Connected, .Notifying].map(\.rawValue).contains(transmitterInfo.connectionState)
     }
-    var sensorStatus: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(LocalizedString("Sensor State", comment: "Text describing Sensor state label in settingsview"))
-                .fontWeight(.heavy)
-                .fixedSize()
-            Text("\(sensorStatusText)")
-                .foregroundColor(.secondary)
-                .textSelection(.enabled)
+
+    var sensorStatusRow: some View {
+        let status = LibreSensorStatusDisplay.compute(
+            lifecycle: sensorInfo.sensorLifecycle,
+            isDeviceSelected: sensorInfo.isPaired,
+            isConnected: isConnected,
+            measurementErrors: sensorInfo.activeMeasurementErrors
+        )
+        return HStack(alignment: .top, spacing: 10) {
+            Image(systemName: status.iconName)
+                .foregroundStyle(status.iconColor(guidanceColors))
+            VStack(alignment: .leading, spacing: 2) {
+                status.title.fontWeight(.heavy).foregroundStyle(.primary)
+                status.message.foregroundStyle(.secondary)
+            }
         }
     }
-    
-    var sensorSerialText : String {
-        let ret = sensorInfo.sensorSerial
-        print("got serial: \(ret)")
-        return ret.isEmpty ? " - " : ret
+
+    // Bridge transmitter (MiaoMiao/Bubble/Blucon, etc) battery is hardware state,
+    // independent of the sensor's own lifecycle. As such its kept as its own row rather than
+    // folded into `LibreSensorStatusDisplay`'s severity, so it can surface
+    // regardless of what the sensor status above is currently showing.
+    private var isBridgeBatteryLow: Bool {
+        guard let percent = transmitterInfo.batteryPercent else { return false }
+        return percent <= 20
     }
-    
-    var sensorSerial : some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(LocalizedString("Sensor Serial", comment: "Text describing Sensor serial label in settingsview"))
-                // .font(.system(size: 1))
-                .fontWeight(.heavy)
-                .fixedSize()
-            Text("\(sensorSerialText)")
-                .foregroundColor(.secondary)
-                .textSelection(.enabled)
+
+    var bridgeBatteryRow: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "battery.25")
+                .foregroundStyle(guidanceColors.warning)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(LocalizedString("Bridge battery low", comment: "Title for a warning that the bridge transmitter's battery is low"))
+                    .fontWeight(.heavy)
+                    .foregroundStyle(.primary)
+                Text(LocalizedString("Consider charging your transmitter soon.", comment: "Message for a warning that the bridge transmitter's battery is low"))
+                    .foregroundStyle(.secondary)
+            }
         }
     }
-    
+
     var headerSection: some View {
         Section {
             VStack(alignment: .trailing) {
-                
+
                 Spacer()
                 headerImage
-                
+
                 lifecycleProgress
                 Spacer()
-                HStack(alignment: .top) {
-                    sensorStatus
-                    Spacer()
-                    sensorSerial
-                }
-                
-                /*Divider()
-                Text("some faultAction")
-                    .font(Font.footnote.weight(.semibold))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                 */
-                
+
             }
-            if sensorIsExpired {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Sensor is expired")
-                        .font(Font.subheadline.weight(.bold))
-                    Text("Replace sensor immediately to continue receving glucose values")
-                        .font(Font.footnote.weight(.semibold))
-                }.padding(.vertical, 8)
-            } else if !["Notifying", "Connected"].contains(transmitterInfo.connectionState) || !showProgress {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(LocalizedString("No Connection: ", comment: "Text describing no connection label in settingsview"))
-                        .font(Font.subheadline.weight(.bold))
-                     Text("\(transmitterInfo.connectionState)")
-                        .font(Font.footnote.weight(.semibold))
-                }.padding(.vertical, 8)
+            sensorStatusRow
+            if isBridgeBatteryLow {
+                bridgeBatteryRow
             }
         }
     }
 
 }
 
-struct SettingsOverview_Previews: PreviewProvider {
-    static var previews: some View {
-        NotificationSettingsView()
+/// Pushed manually as its own hosting controller (see
+/// LibreTransmitterManagerV3.settingsViewController) rather than via NavigationLink, so its
+/// navigationItem.title can be set directly in UIKit - see the comment on SettingsView.body.
+struct DeviceInfoView: View {
+    @ObservedObject var transmitterInfo: LibreTransmitter.TransmitterInfo
+
+    var body: some View {
+        List {
+            Section(header: Text(LocalizedString("Device Info", comment: "Text describing header for device info section"))) {
+                if !transmitterInfo.battery.isEmpty {
+                    SettingsItem(title: "Battery", detail: $transmitterInfo.battery )
+                }
+
+                // The firmware version is not always extractable for all devices
+                // and the libre2 direct version does not support it at all
+                if !transmitterInfo.hardware.isEmpty {
+                    SettingsItem(title: "Hardware", detail: $transmitterInfo.hardware )
+                }
+                // The firmware version is not always extractable for all devices
+                // and the libre2 direct version does not support it at all
+                if !transmitterInfo.firmware.isEmpty {
+                    SettingsItem(title: "Firmware", detail: $transmitterInfo.firmware )
+                }
+
+                SettingsItem(title: "Connection State", detail: $transmitterInfo.connectionState )
+                SettingsItem(title: "Transmitter Type", detail: $transmitterInfo.transmitterType )
+
+                // The mac address of a given device is normally not available on ios
+                // Only the bluetooth identifier, which is a normalized derivative of the mac address is available
+                // However, some transmitters, such as the bubble, provide their own mac address as part of its advertisement info
+                // which we extract and put herer
+                if !transmitterInfo.transmitterMacAddress.isEmpty {
+                    SettingsItem(title: "Mac", detail: $transmitterInfo.transmitterMacAddress )
+                }
+            }
+        }
+        .textSelection(.enabled)
     }
 }

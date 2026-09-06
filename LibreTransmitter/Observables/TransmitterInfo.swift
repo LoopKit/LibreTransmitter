@@ -8,6 +8,7 @@
 
 public class TransmitterInfo: ObservableObject, Equatable, Hashable {
     @Published public var battery = ""
+    @Published public var batteryPercent: Int?
     @Published public var hardware = ""
     @Published public var firmware = ""
     @Published public var connectionState = ""
@@ -16,7 +17,7 @@ public class TransmitterInfo: ObservableObject, Equatable, Hashable {
     @Published public var sensorType = ""
 
     public static func == (lhs: TransmitterInfo, rhs: TransmitterInfo) -> Bool {
-         lhs.battery == rhs.battery && lhs.hardware == rhs.hardware &&
+         lhs.battery == rhs.battery && lhs.batteryPercent == rhs.batteryPercent && lhs.hardware == rhs.hardware &&
          lhs.firmware == rhs.firmware && lhs.connectionState == rhs.connectionState &&
          lhs.transmitterType == rhs.transmitterType && lhs.transmitterMacAddress == rhs.transmitterMacAddress &&
          lhs.sensorType == rhs.sensorType

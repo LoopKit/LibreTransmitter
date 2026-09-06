@@ -65,13 +65,6 @@ extension LibreTransmitterManagerV3 {
             return
         }
 
-        if sensor.maxAge > 0 {
-            let minutesLeft = Double(sensor.maxAge - bleData.age)
-            NotificationHelper.sendSensorExpireAlertIfNeeded(minutesLeft: minutesLeft)
-
-        }
-        
-
         verifySensorChange(for: sensor.uuid, activatedAt: Date() - TimeInterval(minutes: Double(bleData.age)))
            
         
@@ -91,12 +84,17 @@ extension LibreTransmitterManagerV3 {
             self.countTimesWithoutData &+= 1
         } else {
             self.latestBackfill = glucose.max { $0.startDate < $1.startDate }
-            self.latestPrediction =  self.createBloodSugarPrediction(bleData.trend, calibration: calibrationData)
             self.logger.debug("latestbackfill set to \(self.latestBackfill.debugDescription)")
             self.countTimesWithoutData = 0
         }
 
         self.setObservables(sensorData: nil, bleData: bleData, metaData: Device)
+        // setObservables() updates sensorInfoObservable asynchronously on the main
+        // queue; enqueue evaluateAlerts() the same way so it's guaranteed to run
+        // after those updates land (GCD preserves submission order on a serial queue).
+        DispatchQueue.main.async {
+            self.evaluateAlerts()
+        }
 
         self.logger.debug("handleGoodReading returned with \(newGlucose.count) entries")
         self.delegateQueue.async {

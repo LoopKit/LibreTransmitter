@@ -13,6 +13,23 @@ extension UserDefaults {
     private enum Key: String {
         case bluetoothDeviceUUIDString = "com.loopkit.librebluetoothDeviceUUIDString"
         case libre2UiD = "com.loopkit.libre2uid"
+        case dangerMode = "com.loopkit.libreDangerModeActivated"
+    }
+
+    public func optionalBool(forKey defaultName: String) -> Bool? {
+        if let value = value(forKey: defaultName) {
+            return value as? Bool
+        }
+        return nil
+    }
+
+    var dangerModeActivated: Bool {
+        get {
+            optionalBool(forKey: Key.dangerMode.rawValue) ?? false
+        }
+        set {
+            set(newValue, forKey: Key.dangerMode.rawValue)
+        }
     }
 
     public var preSelectedUid: Data? {

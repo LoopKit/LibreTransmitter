@@ -23,7 +23,7 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
    
     
 
-    public typealias GlucoseArrayWithPrediction = (trends: [LibreGlucose], historical: [LibreGlucose], prediction: [LibreGlucose])
+    public typealias GlucoseReadout = (trends: [LibreGlucose], historical: [LibreGlucose])
     public lazy var logger = Logger(forType: Self.self)
 
     public let isOnboarded = true   // No distinction between created and onboarded
@@ -35,7 +35,35 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
     }
 
     public var cgmManagerStatus: CGMManagerStatus {
-        CGMManagerStatus(hasValidSensorSession: hasValidSensorSession, device: nil)
+        CGMManagerStatus(hasValidSensorSession: hasValidSensorSession, lastCommunicationDate: latestReadingTimestamp, device: nil)
+    }
+
+    /// Tracks which `LibreAlertCondition`s were issued as of the last `evaluateAlerts()` call,
+    /// so it can diff against the currently-firing set and retract anything that's resolved.
+    var firingAlertConditions: Set<LibreAlertCondition> = []
+
+    /// Timestamp of the most recent successful glucose reading, from either data path.
+    /// Used to detect signal loss (absence of readings) and to populate `CGMManagerStatus.lastCommunicationDate`.
+    var latestReadingTimestamp: Date?
+
+    /// The most recently observed hard sensor fault, normalized across both data paths.
+    /// Cleared once the sensor recovers to a normal reporting state.
+    var lastFault: LibreSensorLifecycle.FaultKind?
+
+    /// The most recently reported `SensorState` byte from a classic (FRAM-reading) transmitter.
+    /// Direct-BLE Libre2 has no equivalent signal and leaves this `nil`.
+    var lastKnownSensorState: SensorState?
+
+    public var sensorLifecycle: LibreSensorLifecycle {
+        LibreSensorLifecycle.compute(
+            sensorPaired: isDeviceSelected,
+            activatedAt: sensorInfoObservable.activatedAt,
+            expiresAt: sensorInfoObservable.expiresAt,
+            latestReadingAt: latestReadingTimestamp,
+            sensorMaxMinutesWearTime: sensorInfoObservable.sensorMaxMinutesWearTime,
+            sensorState: lastKnownSensorState,
+            lastFault: lastFault
+        )
     }
 
     public var glucoseDisplay: GlucoseDisplayable?
@@ -167,14 +195,16 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
     public func fetchNewDataIfNeeded(_ completion: @escaping (CGMReadingResult) -> Void) {
         logger.debug("fetchNewDataIfNeeded called but we don't continue")
 
+        // Real data delivery happens via the delegate callbacks (libreTransmitterDidUpdate /
+        // libreSensorDidUpdate), not through this polling entry point. However, this is the only
+        // place we can detect "silence" (no callback at all), which is what signal-loss means -
+        // so use it as a periodic safety net for evaluating lifecycle alerts.
+        evaluateAlerts()
+
         completion(.noData)
     }
 
     public var lastConnected: Date?
-
-    public internal(set) var alarmStatus = AlarmStatus()
-
-    internal var latestPrediction: LibreGlucose?
 
     public var latestBackfill: LibreGlucose? {
         willSet(newValue) {
@@ -186,26 +216,12 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
             let oldValue = latestBackfill
 
             defer {
-                logger.debug("sending glucose notification")
-                NotificationHelper.sendGlucoseNotificationIfNeeded(glucose: newValue,
-                                                                   oldValue: oldValue,
-                                                                   trend: trend,
-                                                                   battery: proxy?.metadata?.batteryString ?? "n/a",
-                                                                   glucoseFormatter: alertsUnitPreference.formatter)
-
-                // once we have a new glucose value, we can update the isalarming property
-                if let activeAlarms = UserDefaults.standard.glucoseSchedules?.getActiveAlarms(newValue.glucoseDouble) {
-                    DispatchQueue.main.async {
-                        self.alarmStatus.isAlarming = ([.high, .low].contains(activeAlarms))
-                        self.alarmStatus.glucoseScheduleAlarmResult = activeAlarms
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                    self.alarmStatus.isAlarming = false
-                    self.alarmStatus.glucoseScheduleAlarmResult = .none
-                    }
-                }
-
+                // evaluateAlerts() is deliberately not called here: it depends on
+                // sensorInfoObservable's activatedAt/expiresAt, which are only
+                // guaranteed fresh once setObservables() has run for this same
+                // update - callers trigger evaluateAlerts() themselves right after
+                // that call, using data from this same read.
+                latestReadingTimestamp = newValue.startDate
             }
 
             logger.debug("latestBackfill set, newvalue is \(newValue.glucose)")
@@ -234,14 +250,42 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 
         self.init()
         logger.debug("LibreTransmitterManager  has run init from rawstate")
-        
+
+        let persisted = LibreCGMManagerState(rawValue: rawState)
+        sensorInfoObservable.activatedAt = persisted.activatedAt
+        sensorInfoObservable.expiresAt = persisted.expiresAt
+        sensorInfoObservable.sensorMaxMinutesWearTime = persisted.sensorMaxMinutesWearTime
+        sensorInfoObservable.sensorSerial = persisted.sensorSerial ?? ""
+        transmitterInfoObservable.sensorType = persisted.sensorType ?? ""
+        latestReadingTimestamp = persisted.latestReadingTimestamp
+        lastConnected = persisted.lastConnected
+        lastPersistedState = persisted
+    }
+
+    /// A stored snapshot of the last state actually handed to
+    /// `cgmManagerDelegate?.cgmManagerDidUpdateState(self)`, so `evaluateAlerts()`
+    /// only notifies the delegate (triggering an app-level persistence save)
+    /// when something persistence-relevant actually changed.
+    var lastPersistedState: LibreCGMManagerState?
+
+    var currentPersistableState: LibreCGMManagerState {
+        LibreCGMManagerState(
+            activatedAt: sensorInfoObservable.activatedAt,
+            sensorMaxMinutesWearTime: sensorInfoObservable.sensorMaxMinutesWearTime,
+            sensorSerial: sensorInfoObservable.sensorSerial.isEmpty ? nil : sensorInfoObservable.sensorSerial,
+            sensorType: transmitterInfoObservable.sensorType.isEmpty ? nil : transmitterInfoObservable.sensorType,
+            latestReadingTimestamp: latestReadingTimestamp,
+            lastConnected: lastConnected
+        )
     }
 
     public var rawState: CGMManager.RawStateValue {
-        [:]
+        currentPersistableState.rawValue
     }
 
-    open var localizedTitle: String { "FreeStyle Libre" }
+    open var localizedTitle: String {
+        transmitterInfoObservable.sensorType.isEmpty ? LocalizedString("FreeStyle Libre", comment: "Generic fallback title for the CGM settings screen before a sensor type is known") : transmitterInfoObservable.sensorType
+    }
 
     public let appURL: URL? = nil // URL(string: "spikeapp://")
 
@@ -254,7 +298,8 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
         lastConnected = nil
 
         logger.debug("LibreTransmitterManager will be created now")
-        NotificationHelper.requestNotificationPermissionsIfNeeded()
+
+        sensorInfoObservable.isPaired = isDeviceSelected
 
         if isDeviceSelected {
             establishProxy()
@@ -270,8 +315,21 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
         disconnect()
         transmitterInfoObservable = TransmitterInfo()
         sensorInfoObservable = SensorInfo()
+        sensorInfoObservable.isPaired = isDeviceSelected
         glucoseInfoObservable = GlucoseInfo()
-        
+        latestReadingTimestamp = nil
+        lastFault = nil
+        lastKnownSensorState = nil
+        firingAlertConditions = []
+
+        // Make sure the now-cleared state actually gets persisted, so a stale
+        // activatedAt/expiresAt from the previous sensor doesn't get restored
+        // on the next app launch.
+        lastPersistedState = nil
+        let delegate = cgmManagerDelegate
+        delegateQueue.async {
+            delegate?.cgmManagerDidUpdateState(self)
+        }
     }
 
     public func disconnect() {
@@ -331,30 +389,6 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 // MARK: - Convenience functions
 extension LibreTransmitterManagerV3 {
 
-    internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo) -> LibreGlucose? {
-        let allGlucoses = measurements.sorted { $0.date > $1.date }
-
-        // Increase to up to 15 to move closer to real blood sugar
-        // The cost is slightly more noise on consecutive readings
-        let glucosePredictionMinutes: Double = 10
-
-        guard allGlucoses.count > 15 else {
-            logger.info("not creating blood sugar prediction: less data elements than needed (\(allGlucoses.count))")
-            return nil
-        }
-
-        if let predicted = allGlucoses.predictBloodSugar(glucosePredictionMinutes) {
-            let currentBg = predicted.calibratedGlucose(calibrationInfo: calibration)
-            let bgDate = predicted.date.addingTimeInterval(60 * -glucosePredictionMinutes)
-            logger.debug("Predicted glucose (not used) was: \(currentBg)")
-            return LibreGlucose(unsmoothedGlucose: currentBg, glucoseDouble: currentBg, timestamp: bgDate)
-        } else {
-            logger.debug("Tried to predict glucose value but failed!")
-            return nil
-        }
-
-    }
-
     public func setObservables(sensorData: SensorDataProtocol?, bleData: Libre2.LibreBLEResponse?, metaData: LibreTransmitterMetadata?) {
         logger.debug("setObservables called")
         DispatchQueue.main.async {
@@ -362,6 +396,7 @@ extension LibreTransmitterManagerV3 {
             if let metaData=metaData {
                 self.logger.debug("will set transmitterInfoObservable")
                 self.transmitterInfoObservable.battery = metaData.batteryString
+                self.transmitterInfoObservable.batteryPercent = metaData.battery
                 self.transmitterInfoObservable.hardware = metaData.hardware ?? ""
                 self.transmitterInfoObservable.firmware = metaData.firmware ?? ""
                 self.transmitterInfoObservable.sensorType = metaData.sensorType()?.description ?? "Unknown"
@@ -470,15 +505,7 @@ extension LibreTransmitterManagerV3 {
                 self.logger.debug("will set glucoseInfoObservable")
                 self.glucoseInfoObservable.glucose = d.quantity
                 self.glucoseInfoObservable.date = d.timestamp
-            }
-
-            if let d = self.latestPrediction {
-                self.glucoseInfoObservable.prediction = d.quantity
-                self.glucoseInfoObservable.predictionDate = d.timestamp
-
-            } else {
-                self.glucoseInfoObservable.prediction = nil
-                self.glucoseInfoObservable.predictionDate = nil
+                self.sensorInfoObservable.activeMeasurementErrors = d.error.filter { $0 != .OK }
             }
         }
     }
