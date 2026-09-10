@@ -3208,6 +3208,12 @@
             "value" : "Impostazioni"
           }
         },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppsett"
+          }
+        },
         "nb-NO" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5231,6 +5237,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fine"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
           }
         },
         "nb-NO" : {
@@ -11144,6 +11156,12 @@
             "value" : "Salva"
           }
         },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        },
         "nb-NO" : {
           "stringUnit" : {
             "state" : "translated",
@@ -13737,6 +13755,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "U"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E"
           }
         },
         "nb-NO" : {
