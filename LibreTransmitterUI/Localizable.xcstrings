@@ -1623,7 +1623,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AEr du sikker på at du vil slette CGM?"
+            "value" : "Er du sikker på at du vil slette denne CGM-en?"
           }
         },
         "nb-NO" : {
