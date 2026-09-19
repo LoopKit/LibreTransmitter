@@ -65,13 +65,6 @@ extension LibreTransmitterManagerV3 {
             return
         }
 
-        if sensor.maxAge > 0 {
-            let minutesLeft = Double(sensor.maxAge - bleData.age)
-            NotificationHelper.sendSensorExpireAlertIfNeeded(minutesLeft: minutesLeft)
-
-        }
-        
-
         verifySensorChange(for: sensor.uuid, activatedAt: Date() - TimeInterval(minutes: Double(bleData.age)))
            
         

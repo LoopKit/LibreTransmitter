@@ -13,7 +13,6 @@ import LoopKit
 extension LibreTransmitterManagerV3 {
 
     public func noLibreTransmitterSelected() {
-        NotificationHelper.sendNoTransmitterSelectedNotification()
     }
 
     public func libreTransmitterDidUpdate(with sensorData: SensorData, and Device: LibreTransmitterMetadata) {
@@ -21,7 +20,6 @@ extension LibreTransmitterManagerV3 {
         self.logger.debug("got sensordata: \(String(describing: sensorData)), bytescount: \( sensorData.bytes.count), bytes: \(sensorData.bytes)")
         var sensorData = sensorData
 
-        NotificationHelper.sendLowBatteryNotificationIfNeeded(device: Device)
         self.setObservables(sensorData: nil, bleData: nil, metaData: Device)
 
          if !sensorData.isLikelyLibre1FRAM {
@@ -33,7 +31,10 @@ extension LibreTransmitterManagerV3 {
                 }
             } else {
                 logger.debug("Sensor type was incorrect, and no decryption of sensor was possible")
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.encryptedSensor))
+                self.lastFault = .encryptedOrUnsupported
+                self.delegateQueue.async {
+                    self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.encryptedSensor))
+                }
                 return
             }
         }
@@ -44,8 +45,7 @@ extension LibreTransmitterManagerV3 {
 
         tryPersistSensorData(with: sensorData)
 
-        NotificationHelper.sendInvalidSensorNotificationIfNeeded(sensorData: sensorData)
-        NotificationHelper.sendInvalidChecksumIfDeveloper(sensorData)
+        self.lastKnownSensorState = sensorData.state
 
         guard sensorData.hasValidCRCs else {
             self.delegateQueue.async {
@@ -56,20 +56,24 @@ extension LibreTransmitterManagerV3 {
             return
         }
 
-        NotificationHelper.sendSensorExpireAlertIfNeeded(sensorData: sensorData)
-
         guard sensorData.state == .ready || sensorData.state == .starting else {
             logger.debug("got sensordata with valid crcs, but sensor is either expired or failed")
+            if sensorData.state == .failure || sensorData.state == .shutdown {
+                self.lastFault = .sensorFailure
+            }
             self.delegateQueue.async {
                 self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.expiredSensor))
             }
             return
         }
 
+        // sensor is reporting a healthy state again, clear any previously recorded fault
+        self.lastFault = nil
+
         logger.debug("got sensordata with valid crcs, sensor was ready")
         // self.lastValidSensorData = sensorData
 
-        
+
         verifySensorChange(for: sensorData.uuid, activatedAt: Date() - TimeInterval(minutes: Double(sensorData.minutesSinceStart)))
         
         
@@ -203,14 +207,12 @@ extension LibreTransmitterManagerV3 {
             do {
                 try KeychainManager.standard.setLibreNativeCalibrationData(calibrationparams)
             } catch {
-                NotificationHelper.sendCalibrationNotification(.invalidCalibrationData)
                 callback(.invalidCalibrationData, nil)
                 return
             }
             // here we assume success, data is not changed,
             // and we trust that the remote endpoint returns correct data for the sensor
 
-            NotificationHelper.sendCalibrationNotification(.success)
             callback(nil, self?.readingToGlucose(data, calibration: calibrationparams))
         }
     }
@@ -250,10 +252,9 @@ extension LibreTransmitterManagerV3 {
         case .newSensor:
             //we can't be sure of the activation datetime for the new sensor here
             logger.debug("New libresensor detected")
-            NotificationHelper.sendSensorChangeNotificationIfNeeded()
         case .noSensor:
             logger.debug("No libresensor detected")
-            NotificationHelper.sendSensorNotDetectedNotificationIfNeeded(noSensor: true)
+            self.lastFault = .noSensorFound
         default:
             // we don't care about the rest!
             break
