@@ -26,4 +26,16 @@ class GenericObservableObject: ObservableObject {
         .store(in: &cancellables)
         return self
     }
+
+    /// Like `listenOnce`, but keeps listening for the lifetime of this object instead of
+    /// tearing itself down after the first notification. Use for repeatable actions (e.g.
+    /// navigation triggers that can fire more than once per screen), not one-shot ones.
+    @discardableResult func listen(listener: @escaping () -> Void) -> Self {
+        objectWillChange
+        .sink { _ in
+            listener()
+        }
+        .store(in: &cancellables)
+        return self
+    }
 }

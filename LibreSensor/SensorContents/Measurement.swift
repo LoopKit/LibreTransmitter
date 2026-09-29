@@ -25,7 +25,7 @@ extension MeasurementProtocol {
     }
 }
 
-public enum MeasurementError: Int, CaseIterable, Codable {
+public enum MeasurementError: Int, CaseIterable, Codable, Equatable {
     case OK = 0
     case SD14_FIFO_OVERFLOW      = 1
     case FILTER_DELTA            = 0x02

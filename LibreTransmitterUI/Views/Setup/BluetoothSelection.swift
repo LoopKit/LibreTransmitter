@@ -220,7 +220,6 @@ struct BluetoothSelection: View {
     init(cancelNotifier: GenericObservableObject, saveNotifier: GenericObservableObject, searcher: BluetoothSearcher) {
         self.cancelNotifier = cancelNotifier
         self.saveNotifier = saveNotifier
-        LibreTransmitter.NotificationHelper.requestNotificationPermissionsIfNeeded()
         self.searcher = searcher
     }
 

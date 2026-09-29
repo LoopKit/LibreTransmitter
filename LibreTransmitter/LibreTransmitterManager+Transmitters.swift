@@ -13,7 +13,6 @@ import LoopKit
 extension LibreTransmitterManagerV3 {
 
     public func noLibreTransmitterSelected() {
-        NotificationHelper.sendNoTransmitterSelectedNotification()
     }
 
     public func libreTransmitterDidUpdate(with sensorData: SensorData, and Device: LibreTransmitterMetadata) {
@@ -21,7 +20,6 @@ extension LibreTransmitterManagerV3 {
         self.logger.debug("got sensordata: \(String(describing: sensorData)), bytescount: \( sensorData.bytes.count), bytes: \(sensorData.bytes)")
         var sensorData = sensorData
 
-        NotificationHelper.sendLowBatteryNotificationIfNeeded(device: Device)
         self.setObservables(sensorData: nil, bleData: nil, metaData: Device)
 
          if !sensorData.isLikelyLibre1FRAM {
@@ -33,7 +31,10 @@ extension LibreTransmitterManagerV3 {
                 }
             } else {
                 logger.debug("Sensor type was incorrect, and no decryption of sensor was possible")
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.encryptedSensor))
+                self.lastFault = .encryptedOrUnsupported
+                self.delegateQueue.async {
+                    self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.encryptedSensor))
+                }
                 return
             }
         }
@@ -44,8 +45,7 @@ extension LibreTransmitterManagerV3 {
 
         tryPersistSensorData(with: sensorData)
 
-        NotificationHelper.sendInvalidSensorNotificationIfNeeded(sensorData: sensorData)
-        NotificationHelper.sendInvalidChecksumIfDeveloper(sensorData)
+        self.lastKnownSensorState = sensorData.state
 
         guard sensorData.hasValidCRCs else {
             self.delegateQueue.async {
@@ -56,25 +56,29 @@ extension LibreTransmitterManagerV3 {
             return
         }
 
-        NotificationHelper.sendSensorExpireAlertIfNeeded(sensorData: sensorData)
-
         guard sensorData.state == .ready || sensorData.state == .starting else {
             logger.debug("got sensordata with valid crcs, but sensor is either expired or failed")
+            if sensorData.state == .failure || sensorData.state == .shutdown {
+                self.lastFault = .sensorFailure
+            }
             self.delegateQueue.async {
                 self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.expiredSensor))
             }
             return
         }
 
+        // sensor is reporting a healthy state again, clear any previously recorded fault
+        self.lastFault = nil
+
         logger.debug("got sensordata with valid crcs, sensor was ready")
         // self.lastValidSensorData = sensorData
 
-        
+
         verifySensorChange(for: sensorData.uuid, activatedAt: Date() - TimeInterval(minutes: Double(sensorData.minutesSinceStart)))
         
         
 
-        self.handleGoodReading(data: sensorData) { [weak self] error, glucoseArrayWithPrediction in
+        self.handleGoodReading(data: sensorData) { [weak self] error, glucoseReadout in
             guard let self else {
                 print(" handleGoodReading could not lock on self, aborting")
                 return
@@ -87,7 +91,7 @@ extension LibreTransmitterManagerV3 {
                 return
             }
 
-            guard let glucose = glucoseArrayWithPrediction?.trends else {
+            guard let glucose = glucoseReadout?.trends else {
                 self.logger.debug("handleGoodReading returned with no data")
                 self.delegateQueue.async {
                     self.cgmManagerDelegate?.cgmManager(self, hasNew: .noData)
@@ -95,27 +99,25 @@ extension LibreTransmitterManagerV3 {
                 return
             }
 
-            let prediction = glucoseArrayWithPrediction?.prediction
-
             var newGlucoses : [NewGlucoseSample] = []
-            
+
             // Since trends have a spacing of 1 minute between them, we use that to calculate trend arrows
             var trends = self.glucosesToSamplesFilter(glucose, startDate: self.getStartDateForFilter())
-            
+
             // But since Loop only supports 1 glucose reading
             // every 5 minutes, we remove all readings except the newest
             if let newest = trends.first {
                 trends = [newest]
             }
-            
+
             // Historical readings have a spacing of 15 minutes between them,
             // trend arrow calculation doesn't make that much sense
-            if let historical = glucoseArrayWithPrediction?.historical {
+            if let historical = glucoseReadout?.historical {
                 let historical2 = self.glucosesToSamplesFilter(historical, startDate: self.getStartDateForFilter(), calculateTrends: false)
                 if !historical.isEmpty {
                     newGlucoses = historical2
                 }
-                
+
             }
             newGlucoses += trends
 
@@ -127,10 +129,14 @@ extension LibreTransmitterManagerV3 {
                 self.countTimesWithoutData = 0
             }
 
-            self.latestPrediction = prediction?.first
-
             // must be inside this handler as setobservables "depend" on latestbackfill
             self.setObservables(sensorData: sensorData, bleData: nil, metaData: nil)
+            // setObservables() updates sensorInfoObservable asynchronously on the main
+            // queue; enqueue evaluateAlerts() the same way so it's guaranteed to run
+            // after those updates land (GCD preserves submission order on a serial queue).
+            DispatchQueue.main.async {
+                self.evaluateAlerts()
+            }
 
             self.logger.debug("handleGoodReading returned with \(newGlucoses.count) entries")
             self.delegateQueue.async {
@@ -148,17 +154,12 @@ extension LibreTransmitterManagerV3 {
         }
 
     }
-    private func readingToGlucose(_ data: SensorData, calibration: SensorData.CalibrationInfo) -> GlucoseArrayWithPrediction {
+    private func readingToGlucose(_ data: SensorData, calibration: SensorData.CalibrationInfo) -> GlucoseReadout {
 
         var entries: [LibreGlucose] = []
         var historical: [LibreGlucose] = []
-        var prediction: [LibreGlucose] = []
 
         let trends = data.trendMeasurements()
-
-        if let temp = createBloodSugarPrediction(trends, calibration: calibration) {
-            prediction.append(temp)
-        }
 
         entries = LibreGlucose.fromTrendMeasurements(trends, nativeCalibrationData: calibration)
 
@@ -167,10 +168,10 @@ extension LibreTransmitterManagerV3 {
             historical += LibreGlucose.fromHistoryMeasurements(history, nativeCalibrationData: calibration)
         }
 
-        return (trends: entries, historical: historical, prediction: prediction)
+        return (trends: entries, historical: historical)
     }
 
-    public func handleGoodReading(data: SensorData?, _ callback: @escaping (LibreError?, GlucoseArrayWithPrediction?) -> Void) {
+    public func handleGoodReading(data: SensorData?, _ callback: @escaping (LibreError?, GlucoseReadout?) -> Void) {
         // only care about the once per minute readings here, historical data will not be considered
 
         guard let data else {
@@ -203,14 +204,12 @@ extension LibreTransmitterManagerV3 {
             do {
                 try KeychainManager.standard.setLibreNativeCalibrationData(calibrationparams)
             } catch {
-                NotificationHelper.sendCalibrationNotification(.invalidCalibrationData)
                 callback(.invalidCalibrationData, nil)
                 return
             }
             // here we assume success, data is not changed,
             // and we trust that the remote endpoint returns correct data for the sensor
 
-            NotificationHelper.sendCalibrationNotification(.success)
             callback(nil, self?.readingToGlucose(data, calibration: calibrationparams))
         }
     }
@@ -250,10 +249,9 @@ extension LibreTransmitterManagerV3 {
         case .newSensor:
             //we can't be sure of the activation datetime for the new sensor here
             logger.debug("New libresensor detected")
-            NotificationHelper.sendSensorChangeNotificationIfNeeded()
         case .noSensor:
             logger.debug("No libresensor detected")
-            NotificationHelper.sendSensorNotDetectedNotificationIfNeeded(noSensor: true)
+            self.lastFault = .noSensorFound
         default:
             // we don't care about the rest!
             break

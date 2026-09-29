@@ -16,12 +16,9 @@ public class GlucoseInfo: ObservableObject, Equatable, Hashable {
     @Published public var checksum = ""
     // @Published var entryErrors = ""
 
-    @Published public var prediction: HKQuantity?
-    @Published public var predictionDate: Date?
-
     public static func ==(lhs: GlucoseInfo, rhs: GlucoseInfo) -> Bool {
          lhs.glucose == rhs.glucose && lhs.date == rhs.date &&
-         lhs.checksum == rhs.checksum && lhs.prediction == rhs.prediction && lhs.predictionDate == rhs.predictionDate
+         lhs.checksum == rhs.checksum
 
      }
 }

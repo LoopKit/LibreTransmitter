@@ -23,6 +23,7 @@ public struct LibreGlucose: Codable, Hashable {
     public init(unsmoothedGlucose: Double, glucoseDouble: Double, error: [MeasurementError] = [MeasurementError.OK], timestamp: Date) {
         self.unsmoothedGlucose = unsmoothedGlucose
         self.glucoseDouble = glucoseDouble
+        self.error = error
         self.timestamp = timestamp
     }
 
@@ -128,35 +129,20 @@ extension LibreGlucose {
     static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
         var arr = [LibreGlucose]()
 
-        var shouldSmoothGlucose = true
         for trend in measurements {
             // trend arrows on each libreglucose value is not needed
             // instead we calculate it once when latestbackfill is set, which in turn sets
             // the sensordisplayable property
+            let calibrated = trend.calibratedGlucose(calibrationInfo: nativeCalibrationData)
             let glucose = LibreGlucose(
-                // unsmoothedGlucose: trend.temperatureAlgorithmGlucose,
-                unsmoothedGlucose: trend.calibratedGlucose(calibrationInfo: nativeCalibrationData),
-                glucoseDouble: 0.0,
+                unsmoothedGlucose: calibrated,
+                glucoseDouble: calibrated,
                 error: trend.error,
                 timestamp: trend.date)
             // if sensor is ripped off body while transmitter is attached, values below 1 might be created
             // libre manual: glucose readings are gathered in the system range of 40-500 mg/dL
             if glucose.unsmoothedGlucose > 0 && glucose.unsmoothedGlucose <= 500 {
                 arr.append(glucose)
-            }
-
-            // Just for expliciticity, if one of the values are 0,
-            // then the rest of the values should not be smoothed
-            if glucose.unsmoothedGlucose <= 0 {
-                shouldSmoothGlucose = false
-            }
-        }
-
-        if shouldSmoothGlucose {
-            arr = CalculateSmothedData5Points(origtrends: arr)
-        } else {
-            for i in 0 ..< arr.count {
-                arr[i].glucoseDouble = arr[i].unsmoothedGlucose
             }
         }
 
