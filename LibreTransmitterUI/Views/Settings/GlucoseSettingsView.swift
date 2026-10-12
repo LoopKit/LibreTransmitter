@@ -66,7 +66,7 @@ struct GlucoseSettingsView: View {
             }
             Section(header: Text(LocalizedString("Debug options", comment: "Text describing header for debug options in glucosesettingsview")), footer: Text(LocalizedString("Adds a lot of data to the Issue Report ", comment: "Text informing user of potentially large reports"))) {
                 Toggle("Persist sensordata", isOn: $shouldPersistSensorData)
-                    .onChange(of: shouldPersistSensorData) {newValue in
+                    .onChange(of: shouldPersistSensorData) { _, newValue in
                         if !newValue {
                             UserDefaults.standard.queuedSensorData = nil
                         }

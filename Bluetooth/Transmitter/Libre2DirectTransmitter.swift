@@ -60,7 +60,7 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
             return true
         }
         
-        print("Libre 2 detection using MAC address as matcher: \(UserDefaults.standard.preSelectedSensor?.macAddress?.lowercased()) vs \(name.lowercased())")
+        print("Libre 2 detection using MAC address as matcher: \(String(describing: UserDefaults.standard.preSelectedSensor?.macAddress?.lowercased())) vs \(name.lowercased())")
         if let sensor = UserDefaults.standard.preSelectedSensor, let macAddress = sensor.macAddress {
             return name.lowercased().contains(macAddress.lowercased())
         }
