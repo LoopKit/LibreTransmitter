@@ -181,7 +181,7 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
                                         let patchHex = patchInfo.hexEncodedString()
                                         let sensorType = SensorType(patchInfo: patchInfo)
 
-                                        print("got patchhex: \(patchHex) and sensorType: \(sensorType), with mac address: \(macAddress)")
+                                        print("got patchhex: \(patchHex) and sensorType: \(sensorType), with mac address: \(String(describing: macAddress))")
 
                                         guard sensorUID.count == 8 && patchInfo.count == 6 && fram.count == 344 else {
                                             // self.readingsSubject.send(completion: .failure(LibreError.noSensorData))
