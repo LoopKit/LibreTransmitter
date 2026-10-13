@@ -111,7 +111,7 @@ extension LibreTransmitterManagerV3 {
             // Historical readings have a spacing of 15 minutes between them,
             // trend arrow calculation doesn't make that much sense
             if let historical = glucoseArrayWithPrediction?.historical {
-                let historical2 = self.glucosesToSamplesFilter(historical, startDate: self.getStartDateForFilter(), calculateTrends: false)
+                let historical2 = self.glucosesToSamplesFilter(historical, startDate: self.getStartDateForFilter(), calculateTrends: false, isBackfill: true)
                 if !historical.isEmpty {
                     newGlucoses = historical2
                 }

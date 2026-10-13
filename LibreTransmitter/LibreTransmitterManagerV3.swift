@@ -472,7 +472,7 @@ extension LibreTransmitterManagerV3 {
         return startDate?.addingTimeInterval(1)
     }
 
-    func glucosesToSamplesFilter(_ array: [LibreGlucose], startDate: Date?, calculateTrends: Bool = true) -> [NewGlucoseSample] {
+    func glucosesToSamplesFilter(_ array: [LibreGlucose], startDate: Date?, calculateTrends: Bool = true, isBackfill: Bool = false) -> [NewGlucoseSample] {
         let glucoses = array
             .filter { $0.isStateValid }
             .sorted { $0.startDate > $1.startDate }
@@ -506,7 +506,8 @@ extension LibreTransmitterManagerV3 {
                     isDisplayOnly: false,
                     wasUserEntered: false,
                     syncIdentifier: $0.syncId,
-                    device: self.proxy?.device)
+                    device: self.proxy?.device,
+                    isBackfill: isBackfill)
             }
     }
 
