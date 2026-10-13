@@ -28,5 +28,7 @@
 	<string>LibreTransmitterManagerV3</string>
 	<key>com.loopkit.Loop.DeviceManufacturer</key>
 	<string>Abbott</string>
+	<key>com.loopkit.Loop.PluginSubtitle</key>
+	<string>Libre 1 via MiaoMiao or Bubble, EU Libre 2 direct</string>
 </dict>
 </plist>
