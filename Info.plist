@@ -27,6 +27,8 @@
 	<key>com.loopkit.Loop.CGMManagerIdentifier</key>
 	<string>LibreDemoCGMManager</string>
 	<key>com.loopkit.Loop.DeviceManufacturer</key>
-	<string>Abbott</string>
+	<string>Simulator</string>
+	<key>com.loopkit.Loop.PluginSubtitle</key>
+	<string>For testing; generates glucose values</string>
 </dict>
 </plist>
