@@ -69,7 +69,6 @@ struct SettingsView: View {
     @ObservedObject private var notifyReconnect: GenericObservableObject
 
     @State private var presentableStatus: StatusMessage?
-    @ObservedObject var alarmStatus: LibreTransmitter.AlarmStatus
 
     @State private var showingDestructQuestion = false
     // @State private var showingExporter = false
@@ -86,7 +85,6 @@ struct SettingsView: View {
         notifyDelete: GenericObservableObject,
         notifyReset: GenericObservableObject,
         notifyReconnect: GenericObservableObject,
-        alarmStatus: LibreTransmitter.AlarmStatus,
         pairingService: SensorPairingProtocol,
         bluetoothSearcher: BluetoothSearcher)
     {
@@ -97,13 +95,8 @@ struct SettingsView: View {
         self.notifyDelete = notifyDelete
         self.notifyReset = notifyReset
         self.notifyReconnect = notifyReconnect
-        self.alarmStatus = alarmStatus
         self.pairingService = pairingService
         self.bluetoothSearcher = bluetoothSearcher
-    }
-
-    private var glucoseUnit: HKUnit {
-        displayGlucosePreference.unit
     }
 
     static let formatter = NumberFormatter()
@@ -114,7 +107,6 @@ struct SettingsView: View {
     var body: some View {
             List {
                 headerSection
-                snoozeSection
                 measurementSection
                 if let date = glucoseMeasurement.predictionDate, let prediction = glucoseMeasurement.prediction {
                     Section(header: Text(LocalizedString("Last Blood Sugar prediction", comment: "Text describing header for Blood Sugar prediction section"))) {
@@ -142,19 +134,6 @@ struct SettingsView: View {
                     doneButton
                 }
             }
-    }
-
-    var snoozeSection: some View {
-        Section {
-            NavigationLink(destination: SnoozeView(isAlarming: $alarmStatus.isAlarming, activeAlarms: $alarmStatus.glucoseScheduleAlarmResult)) {
-                Image(systemName: "pause.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(.blue)
-                Text(LocalizedString("Pause Glucose alarms", comment: "Text for pausing glucose alarms")).frame(alignment: .center)
-                    .foregroundColor(.blue)
-                
-            }
-        }
     }
 
     var measurementSection : some View {
@@ -259,26 +238,9 @@ struct SettingsView: View {
 
     var advancedSection: some View {
         Section(header: Text(LocalizedString("Configuration", comment: "Text describing header for advanced settings section"))) {
-            // these subviews don't really need to be notified once glucose unit changes
-            // so we just pass glucoseunit directly on init
-            NavigationLink(destination: AlarmSettingsView(glucoseUnit: self.glucoseUnit)) {
-                SettingsItem(title: "Alarms")
-            }
-            
-            if NotificationHelper.criticalAlarmsEnabled {
-                NavigationLink(destination: CriticalAlarmsVolumeView()) {
-                    SettingsItem(title: "Critical Alarms volume")
-                }
-            }
-            
             NavigationLink(destination: GlucoseSettingsView()) {
                 SettingsItem(title: "Glucose Settings")
             }
-        
-            NavigationLink(destination: NotificationSettingsView()) {
-                SettingsItem(title: "Notifications")
-            }
-
         }
     }
     
@@ -463,6 +425,6 @@ struct SettingsView: View {
 
 struct SettingsOverview_Previews: PreviewProvider {
     static var previews: some View {
-        NotificationSettingsView()
+        GlucoseSettingsView()
     }
 }

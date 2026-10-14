@@ -59,13 +59,10 @@ struct Libre2DirectSetup: View {
             do {
                 try KeychainManager.standard.setLibreNativeCalibrationData(calibrationData)
             } catch {
-                NotificationHelper.sendCalibrationNotification(.invalidCalibrationData)
                 return
             }
             // here we assume success, data is not changed,
             // and we trust that the remote endpoint returns correct data for the sensor
-
-            NotificationHelper.sendCalibrationNotification(.success)
 
             UserDefaults.standard.calibrationMapping = CalibrationToSensorMapping(uuid: info.uuid, reverseFooterCRC: calibrationData.isValidForFooterWithReverseCRCs)
 
@@ -83,8 +80,6 @@ struct Libre2DirectSetup: View {
         SelectionState.shared.selectedStringIdentifier = nil
         print("Paired and set selected UID to: \(String(describing: SelectionState.shared.selectedUID?.hex))")
         saveNotifier.notify()
-        NotificationHelper.sendLibre2DirectFinishedSetupNotifcation()
-
     }
 
     var cancelButton: some View {
