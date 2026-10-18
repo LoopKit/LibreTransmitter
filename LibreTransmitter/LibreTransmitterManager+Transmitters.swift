@@ -104,7 +104,7 @@ extension LibreTransmitterManagerV3 {
             
             // But since Loop only supports 1 glucose reading
             // every 5 minutes, we remove all readings except the newest
-            if let newest = trends.first {
+            if let newest = trends.last {
                 trends = [newest]
             }
             
