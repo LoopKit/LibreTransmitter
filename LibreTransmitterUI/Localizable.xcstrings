@@ -650,7 +650,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Activează și termină încălzirea unui senzor nou cu o altă aplicație sau cititor fizic."
+            "value" : "Activați și finalizați încălzirea unui senzor nou cu o altă aplicație sau cu un cititor fizic."
           }
         },
         "ru" : {
@@ -1079,7 +1079,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adaugă o mulțime de date la Raportul de probleme "
+            "value" : "Adăugați o mulțime de date la Raportul de probleme "
           }
         },
         "ru" : {
@@ -1222,7 +1222,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Adaugă bateria transmițătorului"
+            "value" : "Adăugați bateria transmițătorului"
           }
         },
         "ru" : {
@@ -1633,7 +1633,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AEr du sikker på at du vil slette CGM?"
+            "value" : "Er du sikker på at du vil slette denne CGM-en?"
           }
         },
         "nb-NO" : {
@@ -1669,7 +1669,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sigur doriți să ștergeți acest CGM?"
+            "value" : "Sigur doriți să ștergeți acest senzor de glicemie?"
           }
         },
         "ru" : {
@@ -1711,7 +1711,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "确定删除该 CGM？"
+            "value" : "您确定要删除此 CGM 吗？"
           }
         }
       }
@@ -1812,7 +1812,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sunteți sigur că doriți să eliminați acest CGM din Loop?"
+            "value" : "Sunteți sigur că doriți să eliminați acest senzor de glicemie din Loop?"
           }
         },
         "ru" : {
@@ -2240,7 +2240,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Completare din istoric"
+            "value" : "Completare în urmă din istoric"
           }
         },
         "ru" : {
@@ -2383,7 +2383,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opțiuni de umplere"
+            "value" : "Opțiuni completare în urmă"
           }
         },
         "ru" : {
@@ -2971,7 +2971,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Renunță"
+            "value" : "Anulați"
           }
         },
         "ru" : {
@@ -3217,6 +3217,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impostazioni"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppsett"
           }
         },
         "nb-NO" : {
@@ -3593,7 +3599,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "密钥"
+            "value" : "证书"
           }
         }
       }
@@ -3694,7 +3700,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Volum critic al alarmei"
+            "value" : "Volum critic alarmă"
           }
         },
         "ru" : {
@@ -4422,7 +4428,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Opțiuni de depanare"
+            "value" : "Opțiuni depanare"
           }
         },
         "ru" : {
@@ -4714,7 +4720,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ștergeți CGM"
+            "value" : "Ștergeți senzorul de glicemie"
           }
         },
         "ru" : {
@@ -4756,7 +4762,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "趋势"
+            "value" : "删除CGM"
           }
         }
       }
@@ -4857,7 +4863,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Informații despre dispozitiv"
+            "value" : "Informații dispozitiv"
           }
         },
         "ru" : {
@@ -5000,7 +5006,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deconectați și continuați configurarea"
+            "value" : "Deconectați & continuați configurarea"
           }
         },
         "ru" : {
@@ -5119,7 +5125,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ontkoppel de verbinding met andere apps of apparaten met de sensor via bluetooth."
+            "value" : "Ontkoppel de verbinding met andere apps of apparaten met de sensor via Bluetooth."
           }
         },
         "pl" : {
@@ -5244,6 +5250,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fine"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferdig"
           }
         },
         "nb-NO" : {
@@ -6183,7 +6195,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vizibilitatea notificărilor privind glicemia"
+            "value" : "Vizibilitate notificare glicemie"
           }
         },
         "ru" : {
@@ -7604,7 +7616,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Laatste meting"
+            "value" : "Laatst gelezen meting"
           }
         },
         "pl" : {
@@ -9043,7 +9055,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De meeste Libre 1 en 2 sensoren worden ondersteund, behalve Noord-Amerika Libre 2; zie readme.md voor details."
+            "value" : "De meeste Libre 1 en 2 sensoren worden ondersteund, behalve de Noord-Amerikaanse Libre 2; zie readme.md voor details."
           }
         },
         "pl" : {
@@ -9067,7 +9079,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Majoritatea senzorilor Libre 1 și Libre 2 sunt suportați, cu excepția Libre 2 din America de Nord; consultați readme.md pentru detalii."
+            "value" : "Majoritatea senzorilor Libre 1 și Libre 2 sunt acceptați, cu excepția Libre 2 din America de Nord; consultați readme.md pentru detalii."
           }
         },
         "ru" : {
@@ -9209,7 +9221,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurarea Dispozitiv Nou"
+            "value" : "Configurare Dispozitiv Nou"
           }
         },
         "ru" : {
@@ -9770,7 +9782,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buiten US"
+            "value" : "Buiten VS"
           }
         },
         "pl" : {
@@ -9937,7 +9949,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Asociază senzor"
+            "value" : "Asociați senzor"
           }
         },
         "ru" : {
@@ -10212,7 +10224,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paswoord"
+            "value" : "Wachtwoord"
           }
         },
         "pl" : {
@@ -10380,7 +10392,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Întrerupeți alarmele de glicemie"
+            "value" : "Întrerupeți alarme glicemie"
           }
         },
         "ru" : {
@@ -11197,6 +11209,12 @@
             "value" : "Salva"
           }
         },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lagre"
+          }
+        },
         "nb-NO" : {
           "stringUnit" : {
             "state" : "translated",
@@ -11230,7 +11248,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Salvează"
+            "value" : "Salvați"
           }
         },
         "ru" : {
@@ -11806,7 +11824,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schimbarea senzorului"
+            "value" : "Schimbare senzor"
           }
         },
         "ru" : {
@@ -12518,7 +12536,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seria senzorului"
+            "value" : "Serie senzor"
           }
         },
         "ru" : {
@@ -12804,7 +12822,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Starea senzorului"
+            "value" : "Stare senzor"
           }
         },
         "ru" : {
@@ -13250,7 +13268,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conexiunea Bluetooth va dura până la patru minute înainte de a începe să funcționeze."
+            "value" : "Conexiunea Bluetooth va lua până la patru minute înainte de a începe să funcționeze."
           }
         },
         "ru" : {
@@ -13808,6 +13826,12 @@
             "value" : "U"
           }
         },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E"
+          }
+        },
         "nb-NO" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14115,7 +14139,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "US"
+            "value" : "VS"
           }
         },
         "pl" : {
