@@ -6,7 +6,6 @@
 import Foundation
 import LoopKit
 import os.log
-import LoopAlgorithm
 
 private var logger = Logger(forType: "LibreGlucose")
 

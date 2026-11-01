@@ -12,7 +12,6 @@ import LibreTransmitter
 import LibreTransmitterUI
 import LoopKit
 import LoopKitUI
-import LoopAlgorithm
 import os.log
 import LoopTestingKit
 

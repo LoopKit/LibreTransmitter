@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import LoopAlgorithm
+import LoopKit
 
 public class GlucoseInfo: ObservableObject, Equatable, Hashable {
 
