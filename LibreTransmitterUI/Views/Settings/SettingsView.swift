@@ -9,7 +9,6 @@
 import SwiftUI
 
 import LibreTransmitter
-import LoopAlgorithm
 import LoopKit
 import LoopKitUI
 import UniformTypeIdentifiers

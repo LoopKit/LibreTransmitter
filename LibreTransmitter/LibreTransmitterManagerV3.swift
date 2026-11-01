@@ -5,7 +5,6 @@
 //
 
 import Foundation
-import LoopAlgorithm
 import LoopKit
 import LoopKitUI
 import UIKit
