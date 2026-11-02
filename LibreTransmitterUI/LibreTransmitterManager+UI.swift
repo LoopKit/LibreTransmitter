@@ -84,11 +84,9 @@ extension LibreTransmitterManagerV3: @retroactive CGMManagerUI {
             self?.disconnect()
 
             UserDefaults.standard.preSelectedDevice = nil
-            self?.notifyDelegateOfDeletion {
-                DispatchQueue.main.async {
-                    nav?.notifyComplete()
-
-                }
+            Task { @MainActor in
+                await self?.delete()
+                nav?.notifyComplete()
             }
 
         }
