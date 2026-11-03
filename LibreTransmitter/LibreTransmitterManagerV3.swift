@@ -292,7 +292,11 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
     internal var countTimesWithoutData: Int = 0
 
     open var pairingService: SensorPairingProtocol {
+        #if targetEnvironment(simulator)
+        return SimulatedSensorPairingService()
+        #else
         return SensorPairingService()
+        #endif
     }
 
     open var bluetoothSearcher: BluetoothSearcher {

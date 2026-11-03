@@ -33,6 +33,10 @@ public final class Features {
     }
     
     static var phoneNFCAvailable: Bool {
+        #if targetEnvironment(simulator)
+        return true // pairing talks to libre2sim instead of CoreNFC
+        #else
         return NFCNDEFReaderSession.readingAvailable
+        #endif
     }
 }
