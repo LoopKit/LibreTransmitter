@@ -254,7 +254,9 @@ public extension Libre2 {
                 idValue = ((idValue - delay) / 15) * 15 - 15 * (i - 7)
             }
 
-            let timeStamp = Date().addingTimeInterval(Double(-60 * i))
+            // Record i is not i minutes old: trend records are ints[i] minutes
+            // older than the packet, history records are 15-minute slots.
+            let timeStamp = Date().addingTimeInterval(Double(-60 * (age - idValue)))
             let measurementFactory = Measurement(date: timeStamp, rawGlucose: Int(rawSensorValue), rawTemperature: rawTemperature, rawTemperatureAdjustment: rawTemperatureAdjustment, idValue: idValue)
 
             if i < 7 {
