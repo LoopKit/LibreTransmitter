@@ -101,6 +101,9 @@ struct Libre2DirectSetup: View {
             
             VStack {
                 getLeadingImage()
+                #if targetEnvironment(simulator)
+                SimulatorPairingNotice(pairingService: pairingService)
+                #endif
                 HStack {
                     InstructionList(instructions: [
                         LocalizedString("Your sensor must be activated and fully warmed up.", comment: "Label text for step 1 of libre2 setup"),

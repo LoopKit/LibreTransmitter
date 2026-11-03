@@ -335,7 +335,7 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
         }
     }
 
-    private func nfcCommand(_ code: Subcommand, unlockCode: UInt32, patchInfo: Data, sensorUID: Data) -> NFCCommand {
+    fileprivate func nfcCommand(_ code: Subcommand, unlockCode: UInt32, patchInfo: Data, sensorUID: Data) -> NFCCommand {
         var b: [UInt8] = []
         var y: UInt16
 
@@ -394,3 +394,14 @@ private enum Subcommand: UInt8, CustomStringConvertible {
         }
     }
 }
+
+#if targetEnvironment(simulator)
+extension SensorPairingService {
+    /// The enable-streaming command exactly as pairSensor sends it over CoreNFC,
+    /// for SimulatedSensorPairingService, which sends it to libre2sim instead.
+    static func enableStreamingCommand(unlockCode: UInt32, patchInfo: Data, sensorUID: Data) -> (code: UInt8, parameters: Data) {
+        let cmd = SensorPairingService().nfcCommand(.enableStreaming, unlockCode: unlockCode, patchInfo: patchInfo, sensorUID: sensorUID)
+        return (cmd.code, cmd.parameters)
+    }
+}
+#endif
