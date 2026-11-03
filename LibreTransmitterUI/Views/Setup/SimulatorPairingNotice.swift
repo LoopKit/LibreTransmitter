@@ -44,8 +44,8 @@ struct SimulatorPairingNotice: View {
                  "Start libre2sim on this Mac (github.com/dabear/libre2sim): run ./start.sh in its folder.",
                  detail: reachable == false ? "Not running at \(url.absoluteString)." : sensor)
             step(2, done: bluetoothLoaded,
-                 "Run this app with the ImpossiBLE library: copy the three environment variables start.sh prints into the scheme (Run, Arguments, Environment Variables), then run again.",
-                 detail: bluetoothLoaded ? nil : "The library is not loaded, so the app cannot connect after pairing.")
+                 "Give this app the ImpossiBLE library: start.sh sets it up in the running Simulator, so no scheme changes are needed. If this app was running before start.sh, run it again.",
+                 detail: bluetoothLoaded ? nil : "The library is not loaded, so the app cannot connect after pairing. Without start.sh's setup, add the DYLD_INSERT_LIBRARIES line it prints to the scheme (Run, Arguments, Environment Variables).")
             step(3, done: nil,
                  "Tap Pair Sensor. libre2sim's control panel (\(url.absoluteString)) can activate the sensor or end its warmup.",
                  detail: nil)
