@@ -182,9 +182,9 @@ extension LibreGlucose {
         let smoothingEnabled = UserDefaults.standard.glucoseSmoothingEnabled
         if shouldSmoothGlucose && smoothingEnabled {
             logger.debug("Glucose smoothing applied to \(arr.count) trend readings")
-            arr = CalculateSmothedData5Points(origtrends: arr)
+            arr = CalculateSmoothedData(origtrends: arr)
         } else if shouldSmoothGlucose {
-            let smoothedReadings = CalculateSmothedData5Points(origtrends: arr)
+            let smoothedReadings = CalculateSmoothedData(origtrends: arr)
             let smoothingDifferences = zip(arr, smoothedReadings)
                 .map { pair in
                     let (raw, smoothed) = pair

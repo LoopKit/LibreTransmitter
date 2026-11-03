@@ -10,6 +10,32 @@ import Foundation
 
 // https://github.com/NightscoutFoundation/xDrip/pull/828/files
 
+/// Smooths readings over the same 5 minutes the 5-point average covers when the
+/// readings are one minute apart, as they are in a sensor's FRAM.
+///
+/// A Libre 2's BLE packet holds readings 0, 2, 4, 6, 7, 12 and 15 minutes old. Five of
+/// those points span 7 minutes, so the 5-point average lags a changing glucose by
+/// about 4 minutes. For readings that are not one minute apart, each reading is
+/// averaged with the readings up to 4 minutes older than it instead.
+func CalculateSmoothedData(origtrends: [LibreGlucose]) -> [LibreGlucose] {
+    let oneMinuteApart = zip(origtrends, origtrends.dropFirst()).allSatisfy {
+        abs(abs($0.startDate.timeIntervalSince($1.startDate)) - 60) < 15
+    }
+    if oneMinuteApart {
+        return CalculateSmothedData5Points(origtrends: origtrends)
+    }
+
+    var trends = origtrends
+    for i in trends.indices {
+        let window = origtrends.filter {
+            let older = trends[i].startDate.timeIntervalSince($0.startDate)
+            return older > -15 && older < 4.5 * 60
+        }
+        trends[i].glucoseDouble = window.map(\.unsmoothedGlucose).reduce(0, +) / Double(window.count)
+    }
+    return trends
+}
+
 // private func trendToLibreGlucose(_ measurements: [Measurement]) -> [LibreGlucose]?{
 
 func CalculateSmothedData5Points(origtrends: [LibreGlucose]) -> [LibreGlucose] {

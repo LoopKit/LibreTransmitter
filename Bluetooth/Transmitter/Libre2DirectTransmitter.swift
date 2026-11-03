@@ -42,6 +42,7 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
     weak var delegate: LibreTransmitterDelegate?
 
     private var rxBuffer = Data()
+    private var lastValueReceived: Date?
     private var sensorData: SensorData?
     private var metadata: LibreTransmitterMetadata?
 
@@ -83,6 +84,14 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
     }
 
     func updateValueForNotifyCharacteristics(_ value: Data, peripheral: CBPeripheral, writeCharacteristic: CBCharacteristic?) {
+        // A packet arrives as 20 + 20 + 6 bytes within milliseconds, and packets come a
+        // minute apart. Bytes still here from seconds ago are an incomplete packet: left
+        // in the buffer, they would misalign every later packet.
+        if !rxBuffer.isEmpty, let lastValueReceived, Date().timeIntervalSince(lastValueReceived) > 5 {
+            logger.debug("libre2 direct dropping \(self.rxBuffer.count) bytes of an incomplete packet")
+            reset()
+        }
+        lastValueReceived = Date()
         rxBuffer.append(value)
 
         logger.debug("libre2 direct Appended value with length  \(String(describing: value.count)), buffer length is: \(String(describing: self.rxBuffer.count))")
