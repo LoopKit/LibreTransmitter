@@ -80,15 +80,18 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
         }
         set {
             delegate.delegate = newValue
+            refreshDelegateStartDate()
         }
     }
 
-    public var delegateQueue: DispatchQueue! {
-        get {
-            return delegate.queue
-        }
-        set {
-            delegate.queue = newValue
+    /// The delegate's filter date, for readings processed before `latestBackfill` is set (after a relaunch).
+    /// Readings are processed synchronously, so the delegate is asked ahead of time.
+    private let delegateStartDate = Locked<Date?>(nil)
+
+    private func refreshDelegateStartDate() {
+        Task {
+            let startDate = await delegate.call { await $0?.startDateToFilterNewData(for: self) }
+            delegateStartDate.value = startDate
         }
     }
 
@@ -133,8 +136,8 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
                         warmupPeriod: .hours(1)
                         )
         
-        self.delegateQueue.async {
-            self.cgmManagerDelegate?.cgmManager(self, hasNew: [event])
+        delegate.notify { delegate in
+            await delegate?.cgmManager(self, hasNew: [event])
         }
         
         
@@ -468,7 +471,7 @@ extension LibreTransmitterManagerV3 {
         // but that might not be available when loop is restarted for example
         //
         if startDate == nil {
-            startDate = self.delegate.call { $0?.startDateToFilterNewData(for: self) }
+            startDate = delegateStartDate.value
         }
 
         // add one second to startdate to make this an exclusive (non overlapping) match
