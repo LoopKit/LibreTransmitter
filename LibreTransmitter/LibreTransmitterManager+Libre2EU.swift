@@ -13,9 +13,9 @@ extension LibreTransmitterManagerV3 {
 
     public func libreSensorDidUpdate(with error: LibreError) {
 
-        self.delegateQueue.async {
-            self.logDeviceCommunication("Sensor error \(error)", type: .error)
-            self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(error))
+        self.logDeviceCommunication("Sensor error \(error)", type: .error)
+        delegate.notify { delegate in
+            await delegate?.cgmManager(self, hasNew: .error(error))
         }
 
     }
@@ -48,19 +48,19 @@ extension LibreTransmitterManagerV3 {
             
             
             
-            self.delegateQueue.async {
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.noCalibrationData))
+            delegate.notify { delegate in
+                await delegate?.cgmManager(self, hasNew: .error(LibreError.noCalibrationData))
             }
             return
         }
-        
-        
+
+
 
         guard mapping.reverseFooterCRC == calibrationData.isValidForFooterWithReverseCRCs &&
                 mapping.uuid == sensor.uuid else {
             logger.error("Calibrationdata was not correct for these bluetooth packets. This is a fatal error, we cannot calibrate without re-pairing")
-            self.delegateQueue.async {
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.noCalibrationData))
+            delegate.notify { delegate in
+                await delegate?.cgmManager(self, hasNew: .error(LibreError.noCalibrationData))
             }
             return
         }
@@ -107,17 +107,17 @@ extension LibreTransmitterManagerV3 {
         self.setObservables(sensorData: nil, bleData: bleData, metaData: Device)
 
         self.logger.debug("handleGoodReading returned with \(newGlucose.count) entries")
-        self.delegateQueue.async {
-            var result: CGMReadingResult
-            // If several readings from a valid and running sensor come out empty,
-            // we have (with a large degree of confidence) a sensor that has been
-            // ripped off the body
-            if self.countTimesWithoutData > 1 {
-                result = .error(LibreError.noValidSensorData)
-            } else {
-                result = newGlucose.isEmpty ? .noData : .newData(newGlucose)
-            }
-            self.cgmManagerDelegate?.cgmManager(self, hasNew: result)
+        var result: CGMReadingResult
+        // If several readings from a valid and running sensor come out empty,
+        // we have (with a large degree of confidence) a sensor that has been
+        // ripped off the body
+        if self.countTimesWithoutData > 1 {
+            result = .error(LibreError.noValidSensorData)
+        } else {
+            result = newGlucose.isEmpty ? .noData : .newData(newGlucose)
+        }
+        delegate.notify { delegate in
+            await delegate?.cgmManager(self, hasNew: result)
         }
 
         lastDirectUpdate = Date()

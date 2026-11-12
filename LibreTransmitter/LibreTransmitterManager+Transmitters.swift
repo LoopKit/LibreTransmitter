@@ -33,7 +33,9 @@ extension LibreTransmitterManagerV3 {
                 }
             } else {
                 logger.debug("Sensor type was incorrect, and no decryption of sensor was possible")
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.encryptedSensor))
+                delegate.notify { delegate in
+                    await delegate?.cgmManager(self, hasNew: .error(LibreError.encryptedSensor))
+                }
                 return
             }
         }
@@ -48,8 +50,8 @@ extension LibreTransmitterManagerV3 {
         NotificationHelper.sendInvalidChecksumIfDeveloper(sensorData)
 
         guard sensorData.hasValidCRCs else {
-            self.delegateQueue.async {
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.checksumValidationError))
+            delegate.notify { delegate in
+                await delegate?.cgmManager(self, hasNew: .error(LibreError.checksumValidationError))
             }
 
             logger.debug("did not get sensordata with valid crcs")
@@ -60,8 +62,8 @@ extension LibreTransmitterManagerV3 {
 
         guard sensorData.state == .ready || sensorData.state == .starting else {
             logger.debug("got sensordata with valid crcs, but sensor is either expired or failed")
-            self.delegateQueue.async {
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(LibreError.expiredSensor))
+            delegate.notify { delegate in
+                await delegate?.cgmManager(self, hasNew: .error(LibreError.expiredSensor))
             }
             return
         }
@@ -81,16 +83,16 @@ extension LibreTransmitterManagerV3 {
             }
             if let error {
                 self.logger.error(" handleGoodReading returned with error: \(error.errorDescription)")
-                self.delegateQueue.async {
-                    self.cgmManagerDelegate?.cgmManager(self, hasNew: .error(error))
+                self.delegate.notify { delegate in
+                    await delegate?.cgmManager(self, hasNew: .error(error))
                 }
                 return
             }
 
             guard let glucose = glucoseArrayWithPrediction?.trends else {
                 self.logger.debug("handleGoodReading returned with no data")
-                self.delegateQueue.async {
-                    self.cgmManagerDelegate?.cgmManager(self, hasNew: .noData)
+                self.delegate.notify { delegate in
+                    await delegate?.cgmManager(self, hasNew: .noData)
                 }
                 return
             }
@@ -133,17 +135,17 @@ extension LibreTransmitterManagerV3 {
             self.setObservables(sensorData: sensorData, bleData: nil, metaData: nil)
 
             self.logger.debug("handleGoodReading returned with \(newGlucoses.count) entries")
-            self.delegateQueue.async {
-                var result: CGMReadingResult
-                // If several readings from a valid and running sensor come out empty,
-                // we have (with a large degree of confidence) a sensor that has been
-                // ripped off the body
-                if self.countTimesWithoutData > 1 {
-                    result = .error(LibreError.noValidSensorData)
-                } else {
-                    result = newGlucoses.isEmpty ? .noData : .newData(newGlucoses)
-                }
-                self.cgmManagerDelegate?.cgmManager(self, hasNew: result)
+            var result: CGMReadingResult
+            // If several readings from a valid and running sensor come out empty,
+            // we have (with a large degree of confidence) a sensor that has been
+            // ripped off the body
+            if self.countTimesWithoutData > 1 {
+                result = .error(LibreError.noValidSensorData)
+            } else {
+                result = newGlucoses.isEmpty ? .noData : .newData(newGlucoses)
+            }
+            self.delegate.notify { delegate in
+                await delegate?.cgmManager(self, hasNew: result)
             }
         }
 
