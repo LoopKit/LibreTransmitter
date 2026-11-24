@@ -132,11 +132,12 @@ extension LibreGlucose {
 }
 
 extension LibreGlucose {
-    static func fromHistoryMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
+    static func fromHistoryMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> [LibreGlucose] {
         let calibrated = GlucoseAlgorithm.calibratedGlucoses(
             for: measurements,
             calibrationInfo: nativeCalibrationData,
-            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled)
+            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled,
+            sensorStart: sensorStart)
 
         return zip(measurements, calibrated).compactMap { historical, calibrated in
             guard let glucose = GlucoseAlgorithm.reportableGlucose(calibrated) else {
@@ -150,14 +151,15 @@ extension LibreGlucose {
         }
     }
 
-    static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
+    static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> [LibreGlucose] {
         var arr = [LibreGlucose]()
 
         var shouldSmoothGlucose = true
         let calibrated = GlucoseAlgorithm.calibratedGlucoses(
             for: measurements,
             calibrationInfo: nativeCalibrationData,
-            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled)
+            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled,
+            sensorStart: sensorStart)
 
         for (trend, calibrated) in zip(measurements, calibrated) {
             // trend arrows on each libreglucose value is not needed

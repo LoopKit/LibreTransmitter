@@ -125,6 +125,35 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertEqual(smoothedJump / rawJump, 1 - exp(-0.2), accuracy: 0.02)
     }
 
+    func testDefaultAgeCorrectionIsNeutral() {
+        for days in [-1.0, 0, 0.5, 1, 7, 14, 20] {
+            XCTAssertEqual(GlucoseAlgorithm.ageFactor(days * 86400), 1)
+        }
+        XCTAssertEqual(GlucoseAlgorithm.ageFactor(nil), 1)
+
+        let readings = (0..<16).map { measurement(minutes: -Double($0)) }
+        let withAge = GlucoseAlgorithm.calibratedGlucoses(
+            for: readings, calibrationInfo: calibration(), smoothTemperature: false,
+            sensorStart: readings[0].date.addingTimeInterval(-3600))
+        XCTAssertEqual(withAge[0]!, 167.07451667322786, accuracy: 1e-9)
+    }
+
+    func testAgeFactorShape() {
+        let correction = GlucoseAlgorithm.AgeCorrection(earlyDeficit: 0.1, earlyTimeConstant: 6 * 3600, drift: 0.05, maxAge: 14 * 86400)
+
+        XCTAssertEqual(GlucoseAlgorithm.ageFactor(0, correction: correction), 0.9, accuracy: 1e-12)
+        let earlyPart: Double = 0.1 * exp(-1)
+        let driftPart: Double = 0.05 * 6 / (14 * 24)
+        XCTAssertEqual(GlucoseAlgorithm.ageFactor(6 * 3600, correction: correction), 1 - earlyPart + driftPart, accuracy: 1e-12)
+        XCTAssertEqual(GlucoseAlgorithm.ageFactor(14 * 86400, correction: correction), 1.05, accuracy: 1e-6)
+        // drift stops at maxAge
+        XCTAssertEqual(GlucoseAlgorithm.ageFactor(20 * 86400, correction: correction), 1.05, accuracy: 1e-6)
+        // unknown or negative age is not corrected
+        XCTAssertEqual(GlucoseAlgorithm.ageFactor(-60, correction: correction), 1)
+        // a misconfigured correction can't zero or flip the sensitivity
+        XCTAssertEqual(GlucoseAlgorithm.ageFactor(0, correction: .init(earlyDeficit: 2)), 0.5)
+    }
+
     func testCalibratedGlucosesKeepInputOrderAndInvalidReadings() {
         let readings = [
             measurement(minutes: 0, rawGlucose: 1200),

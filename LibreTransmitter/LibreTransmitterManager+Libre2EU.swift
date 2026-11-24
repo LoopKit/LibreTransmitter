@@ -78,7 +78,7 @@ extension LibreTransmitterManagerV3 {
 
         let sortedTrends = bleData.trend.sorted { $0.date > $1.date}
 
-        let glucose = LibreGlucose.fromTrendMeasurements(sortedTrends, nativeCalibrationData: calibrationData)
+        let glucose = LibreGlucose.fromTrendMeasurements(sortedTrends, nativeCalibrationData: calibrationData, sensorStart: Date() - TimeInterval(minutes: Double(bleData.age)))
 
         var newGlucose : [NewGlucoseSample] = glucosesToSamplesFilter(glucose, startDate: getStartDateForFilter())
         // For libre2 bluetooth we do need all trend elements to calculate trendarrow,

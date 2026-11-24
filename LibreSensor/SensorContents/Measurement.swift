@@ -21,9 +21,9 @@ protocol MeasurementProtocol {
 extension MeasurementProtocol {
     /// Glucose in mg/dL, or nil when the raw data is outside the domain of the algorithm.
     /// Kept at full precision; rounding happens when the value is displayed or reported
-    func calibratedGlucose(calibrationInfo: SensorData.CalibrationInfo, temperature: Double? = nil) -> Double? {
+    func calibratedGlucose(calibrationInfo: SensorData.CalibrationInfo, temperature: Double? = nil, sensorAge: TimeInterval? = nil) -> Double? {
         // add extraslope and extraoffset as indicated by user in the ui
-        glucoseValueFromRaw(calibrationInfo: calibrationInfo, temperature: temperature)
+        glucoseValueFromRaw(calibrationInfo: calibrationInfo, temperature: temperature, sensorAge: sensorAge)
             .map { $0 * calibrationInfo.extraSlope + calibrationInfo.extraOffset }
     }
 }
