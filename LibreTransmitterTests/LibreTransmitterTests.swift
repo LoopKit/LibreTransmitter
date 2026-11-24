@@ -32,6 +32,11 @@ class LibreTransmitterTests: XCTestCase {
         }
     }
 
+    func testLibre2EUWithFirstByte84IsLibre2() {
+        // Reported by a user with an EU sensor whose serial starts with 303
+        XCTAssertEqual(SensorType(patchInfo: Data([0x84, 0x0E, 0x30, 0x01, 0xA0, 0x2A])), .libre2)
+    }
+
     func testWrongSensorTypeShowsThePatchInfo() {
         // A first byte that isn't a known Libre 2 one, as a new sensor batch can report.
         let patchInfo = Data([0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC])
