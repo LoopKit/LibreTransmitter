@@ -258,73 +258,123 @@ fileprivate let t2 = [
     0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999,
 ];
 
-extension MeasurementProtocol {
-    func roundedGlucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo) -> Int {
-        Int(round(glucoseValueFromRaw(calibrationInfo: calibrationInfo)))
+
+/// The factory calibrated Libre 1 / Libre 2 (EU) glucose algorithm.
+/// Functions return nil instead of NaN, infinity or crashing when the raw or calibration
+/// values fall outside the domain of the model.
+enum GlucoseAlgorithm {
+    /// Readings below this are reported as this value ("LO"). The sensor's specified range is 40-500 mg/dL,
+    /// and the linear model is unreliable below it since (g3 - t1) approaches zero
+    static let minimumGlucose = 40.0
+    /// Readings above this are discarded
+    static let maximumGlucose = 500.0
+
+    /// Time constant of the low pass filter applied to sensor temperature.
+    /// The thermistor sits on the skin side and reacts faster than interstitial fluid, so unfiltered
+    /// temperature changes show up as glucose noise of about 5-7 % per °C
+    static let temperatureTimeConstant: TimeInterval = 5 * 60
+
+
+    private static let ca = 0.0009180023
+    private static let cb = 0.0001964561
+    private static let cc = 0.0000007061775
+    private static let cd = 0.00000005283566
+
+    /// Sensor temperature in °C from the thermistor reading (extended Steinhart-Hart equation)
+    static func temperature(rawTemperature: Int, rawTemperatureAdjustment: Int, i6: Double) -> Double? {
+        let rRight = Double(rawTemperatureAdjustment) + i6
+        guard rRight > 0 else {
+            return nil
+        }
+
+        let R = Double(rawTemperature) * (1000 + 71500) / rRight - 1000
+        guard R > 0 else {
+            return nil
+        }
+
+        let logR = log(R)
+        let d = ((cd * logR + cc) * logR + cb) * logR + ca
+        let temperature = 1 / d - 273.15
+
+        return temperature.isFinite ? temperature : nil
     }
 
-    func roundedGlucoseValueFromRaw2(calibrationInfo: SensorData.CalibrationInfo) -> Double{
-        round(glucoseValueFromRaw(calibrationInfo: calibrationInfo))
+    /// Glucose in mg/dL from the raw glucose reading at the given sensor temperature
+    static func glucose(rawGlucose: Int, temperature: Double, calibrationInfo: SensorData.CalibrationInfo) -> Double? {
+        let index = calibrationInfo.i2 - 1
+        guard t1.indices.contains(index), calibrationInfo.i4 != calibrationInfo.i3 else {
+            return nil
+        }
+
+        let g1 = 65 * (Double(rawGlucose) - calibrationInfo.i3) / (calibrationInfo.i4 - calibrationInfo.i3)
+        let g2 = pow(1.045, 32.5 - temperature)
+        let glucose = (g1 * g2 - t1[index]) / t2[index]
+
+        return glucose.isFinite ? glucose : nil
     }
 
-    
-    func glucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo) -> Double {
-        let x : Double = 1000 + 71500;
-        let y : Double = 1000;
+    /// Clamps a calibrated glucose value to the reportable range.
+    /// Returns nil for missing, non positive and too high values
+    static func reportableGlucose(_ glucose: Double?) -> Double? {
+        guard let glucose, glucose > 0, glucose <= maximumGlucose else {
+            return nil
+        }
+        return max(glucose, minimumGlucose)
+    }
 
-        let ca = 0.0009180023;
-        let cb = 0.0001964561;
-        let cc = 0.0000007061775;
-        let cd = 0.00000005283566;
+    /// Time based exponential moving average. Values must be sorted oldest first.
+    /// nil values are passed through and don't update the filter
+    static func lowPassFiltered(_ values: [(date: Date, value: Double?)], timeConstant: TimeInterval) -> [Double?] {
+        var filtered: Double?
+        var filteredDate: Date?
 
-        let rawTemperature = Double(self.rawTemperature)
-        let rawTemperatureAdjustment = Double(self.rawTemperatureAdjustment)
-        let rawGlucose = Double(self.rawGlucose)
+        return values.map { date, value in
+            guard let value else {
+                return nil
+            }
 
-        let rLeft = rawTemperature * x
-        let rRight = rawTemperatureAdjustment + calibrationInfo.i6
+            if let previous = filtered, let previousDate = filteredDate {
+                let alpha = 1 - exp(-max(date.timeIntervalSince(previousDate), 0) / timeConstant)
+                filtered = previous + alpha * (value - previous)
+            } else {
+                filtered = value
+            }
+            filteredDate = date
 
+            return filtered
+        }
+    }
 
-        let R  = ( rLeft / rRight ) - y; //67300.05624296963
+    /// Calibrated glucose for each measurement, in the same order as `measurements`.
+    /// When `smoothTemperature` is true, sensor temperature is low pass filtered across the measurements first
+    static func calibratedGlucoses(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool) -> [Double?] {
+        var temperatures = measurements.map { $0.temperature(calibrationInfo: calibrationInfo) }
 
+        if smoothTemperature {
+            let chronological = measurements.indices.sorted { measurements[$0].date < measurements[$1].date }
+            let filtered = lowPassFiltered(chronological.map { (measurements[$0].date, temperatures[$0]) }, timeConstant: temperatureTimeConstant)
+            for (index, temperature) in zip(chronological, filtered) {
+                temperatures[index] = temperature
+            }
+        }
 
-        let logR  = log(R) //11.116916351337814
-
-        //print("logR:", logR)
-
-        //d = (logR ** 3) * cd + (logR ** 2) * cc + logR * cb + ca;
-
-        let d  = pow(logR, 3) * cd + pow(logR, 2) * cc + logR * cb + ca
-        //print("d:", d) //0.003261852422880152
-
-        let temperature = 1 / d - 273.15;
-
-        //print("temperature:", temperature) //33.4242622154008
-
-        let g1 = 65.0 * (rawGlucose - calibrationInfo.i3) / (calibrationInfo.i4 - calibrationInfo.i3); // 13.647891477440282
-        let g2 = pow(1.045, 32.5 - temperature); //0.9601333057248764
-
-
-        let g3 = g1 * g2 // 13.103795160409106
-
-        //print("g1:", g1)
-        //print("g2:", g2)
-        //print("g3:", g3)
-
-
-        let v1 = t1[calibrationInfo.i2 - 1] // 1.75
-        let v2 = t2[calibrationInfo.i2 - 1] // 0.0706475
-
-        //print("v1:", v1)
-        //print("v2", v2)
-
-        let res = (g3 - v1) / v2; // 160.71050158051037
-
-        //print("res:", res)
-
-        return  res
-
+        return zip(measurements, temperatures).map { measurement, temperature in
+            temperature.flatMap { measurement.calibratedGlucose(calibrationInfo: calibrationInfo, temperature: $0) }
+        }
     }
 }
 
+extension MeasurementProtocol {
+    /// Sensor temperature in °C
+    func temperature(calibrationInfo: SensorData.CalibrationInfo) -> Double? {
+        GlucoseAlgorithm.temperature(rawTemperature: rawTemperature, rawTemperatureAdjustment: rawTemperatureAdjustment, i6: calibrationInfo.i6)
+    }
 
+    /// Glucose in mg/dL, using this reading's own temperature unless another (e.g. filtered) temperature is given
+    func glucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo, temperature: Double? = nil) -> Double? {
+        guard let temperature = temperature ?? self.temperature(calibrationInfo: calibrationInfo) else {
+            return nil
+        }
+        return GlucoseAlgorithm.glucose(rawGlucose: rawGlucose, temperature: temperature, calibrationInfo: calibrationInfo)
+    }
+}

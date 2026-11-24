@@ -17,6 +17,7 @@ struct GlucoseSettingsView: View {
     @AppStorage("com.loopkit.libreSyncToNs") var mmSyncToNS: Bool = true
     @AppStorage("com.loopkit.libreBackfillFromHistory") var mmBackfillFromHistory: Bool = true
     @AppStorage("com.loopkit.libreGlucoseSmoothingEnabled") private var glucoseSmoothingEnabled = true
+    @AppStorage("com.loopkit.libreTemperatureSmoothingEnabled") private var temperatureSmoothingEnabled = true
     @AppStorage("com.loopkit.libreshouldPersistSensorData") var shouldPersistSensorData: Bool = false
 
     @State private var authSuccess = false
@@ -39,10 +40,11 @@ struct GlucoseSettingsView: View {
             }
             Section {
                 Toggle("Smooth glucose readings", isOn: $glucoseSmoothingEnabled)
+                Toggle("Smooth sensor temperature", isOn: $temperatureSmoothingEnabled)
             } header: {
                 Text("Glucose processing")
             } footer: {
-                Text("Applies a five-point moving average to newly received trend readings.")
+                Text("Applies a five-point moving average to newly received trend readings. Temperature smoothing filters the sensor temperature over about five minutes before temperature compensation.")
             }
             Section {
                 Toggle("Send every Libre 2 / Libre 2 Plus reading (experimental)", isOn: Binding(

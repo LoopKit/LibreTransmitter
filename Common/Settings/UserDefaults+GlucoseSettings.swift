@@ -13,6 +13,7 @@ extension UserDefaults {
         case mmSyncToNS = "com.loopkit.libreSyncToNs"
         case mmBackfillFromHistory = "com.loopkit.libreBackfillFromHistory"
         case glucoseSmoothingEnabled = "com.loopkit.libreGlucoseSmoothingEnabled"
+        case temperatureSmoothingEnabled = "com.loopkit.libreTemperatureSmoothingEnabled"
     }
 
     var mmSyncToNs: Bool {
@@ -39,6 +40,15 @@ extension UserDefaults {
         }
         set {
             set(newValue, forKey: Key.glucoseSmoothingEnabled.rawValue)
+        }
+    }
+
+    var temperatureSmoothingEnabled: Bool {
+        get {
+            optionalBool(forKey: Key.temperatureSmoothingEnabled.rawValue) ?? true
+        }
+        set {
+            set(newValue, forKey: Key.temperatureSmoothingEnabled.rawValue)
         }
     }
 

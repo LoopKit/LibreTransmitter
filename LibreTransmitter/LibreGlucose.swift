@@ -30,7 +30,8 @@ public struct LibreGlucose: Codable, Hashable {
     }
 
     public var syncId: String {
-        "\(Int(self.startDate.timeIntervalSince1970))\(self.unsmoothedGlucose)"
+        // Rounded so the identifier stays the same as when glucose was rounded before calibration
+        "\(Int(self.startDate.timeIntervalSince1970))\(self.unsmoothedGlucose.rounded())"
     }
 
     public var isStateValid: Bool {
@@ -132,49 +133,50 @@ extension LibreGlucose {
 
 extension LibreGlucose {
     static func fromHistoryMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
-        var arr = [LibreGlucose]()
+        let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+            for: measurements,
+            calibrationInfo: nativeCalibrationData,
+            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled)
 
-        for historical in measurements {
-            let calibrated = historical.calibratedGlucose(calibrationInfo: nativeCalibrationData)
-            let glucose = LibreGlucose(
-                // unsmoothedGlucose: historical.temperatureAlgorithmGlucose,
-                // glucoseDouble: historical.temperatureAlgorithmGlucose,
-                unsmoothedGlucose: calibrated,
-                glucoseDouble: calibrated,
+        return zip(measurements, calibrated).compactMap { historical, calibrated in
+            guard let glucose = GlucoseAlgorithm.reportableGlucose(calibrated) else {
+                return nil
+            }
+            return LibreGlucose(
+                unsmoothedGlucose: glucose,
+                glucoseDouble: glucose,
                 error: historical.error,
                 timestamp: historical.date)
-
-            if glucose.glucoseDouble > 0 {
-                arr.append(glucose)
-            }
         }
-
-        return arr
     }
 
     static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
         var arr = [LibreGlucose]()
 
         var shouldSmoothGlucose = true
-        for trend in measurements {
+        let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+            for: measurements,
+            calibrationInfo: nativeCalibrationData,
+            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled)
+
+        for (trend, calibrated) in zip(measurements, calibrated) {
             // trend arrows on each libreglucose value is not needed
             // instead we calculate it once when latestbackfill is set, which in turn sets
             // the sensordisplayable property
-            let glucose = LibreGlucose(
-                // unsmoothedGlucose: trend.temperatureAlgorithmGlucose,
-                unsmoothedGlucose: trend.calibratedGlucose(calibrationInfo: nativeCalibrationData),
-                glucoseDouble: 0.0,
-                error: trend.error,
-                timestamp: trend.date)
+
             // if sensor is ripped off body while transmitter is attached, values below 1 might be created
             // libre manual: glucose readings are gathered in the system range of 40-500 mg/dL
-            if glucose.unsmoothedGlucose > 0 && glucose.unsmoothedGlucose <= 500 {
-                arr.append(glucose)
+            if let glucose = GlucoseAlgorithm.reportableGlucose(calibrated) {
+                arr.append(LibreGlucose(
+                    unsmoothedGlucose: glucose,
+                    glucoseDouble: 0.0,
+                    error: trend.error,
+                    timestamp: trend.date))
             }
 
-            // Just for expliciticity, if one of the values are 0,
+            // Just for expliciticity, if one of the values are invalid or 0,
             // then the rest of the values should not be smoothed
-            if glucose.unsmoothedGlucose <= 0 {
+            if (calibrated ?? 0) <= 0 {
                 shouldSmoothGlucose = false
             }
         }
