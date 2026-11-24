@@ -225,4 +225,16 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertNil(glucoses[1])
         XCTAssertEqual(glucoses[2]!, 167.07451667322786, accuracy: 1e-9)
     }
+
+    func testTemperatureOutsideOperatingRangeReturnsNil() {
+        // Normal on-body temperature (~33 C) and the upper edge (~44 C) are accepted
+        XCTAssertNotNil(measurement(rawTemperature: 8000).temperature(calibrationInfo: calibration()))
+        XCTAssertNotNil(measurement(rawTemperature: 5000).temperature(calibrationInfo: calibration()))
+        // Too hot: rawTemperature 4000 -> ~49.5 C, above the 45 C operating maximum
+        XCTAssertNil(measurement(rawTemperature: 4000).temperature(calibrationInfo: calibration()))
+        XCTAssertNil(measurement(rawTemperature: 4000).calibratedGlucose(calibrationInfo: calibration()))
+        // Too cold: rawTemperature 30000 -> ~6.6 C, below the 10 C operating minimum
+        XCTAssertNil(measurement(rawTemperature: 30000).temperature(calibrationInfo: calibration()))
+        XCTAssertNil(measurement(rawTemperature: 30000).calibratedGlucose(calibrationInfo: calibration()))
+    }
 }

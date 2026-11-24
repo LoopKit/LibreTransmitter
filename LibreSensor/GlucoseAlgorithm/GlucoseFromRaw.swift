@@ -269,6 +269,13 @@ enum GlucoseAlgorithm {
     /// Readings above this are discarded
     static let maximumGlucose = 500.0
 
+    /// Sensor operating temperature range (FreeStyle Libre spec, 10-45 °C). Outside this band the
+    /// thermistor-derived temperature is treated as invalid and the reading is dropped, mirroring the
+    /// official algorithm's TEMP_HIGH / TEMP_LOW data-quality flags. A corrupt thermistor read would
+    /// otherwise feed g2 = 1.045^(32.5 - t) and produce a plausible-looking but wrong glucose.
+    /// Normal on-body readings sit around 30-37 °C, so this only rejects clearly invalid data.
+    static let operatingTemperatureRange = 10.0 ... 45.0
+
     /// Time constant of the low pass filter applied to sensor temperature.
     /// The thermistor sits on the skin side and reacts faster than interstitial fluid, so unfiltered
     /// temperature changes show up as glucose noise of about 5-7 % per °C
@@ -312,7 +319,10 @@ enum GlucoseAlgorithm {
         let d = ((cd * logR + cc) * logR + cb) * logR + ca
         let temperature = 1 / d - 273.15
 
-        return temperature.isFinite ? temperature : nil
+        guard temperature.isFinite, operatingTemperatureRange.contains(temperature) else {
+            return nil
+        }
+        return temperature
     }
 
     /// Glucose in mg/dL from the raw glucose reading at the given sensor temperature
