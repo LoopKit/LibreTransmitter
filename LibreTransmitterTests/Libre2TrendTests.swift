@@ -6,6 +6,9 @@
 import XCTest
 @testable import LibreTransmitter
 
+// Foundation also has a Measurement type
+private typealias Measurement = LibreTransmitter.Measurement
+
 class Libre2TrendTests: XCTestCase {
 
     private let receivedAt = Date(timeIntervalSince1970: 1_792_000_000)

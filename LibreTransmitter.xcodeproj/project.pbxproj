@@ -126,6 +126,10 @@
 		C1C318D72A47638E00C6F29F /* MockSensorPairingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1BDBAFE2A44FFD800A787D1 /* MockSensorPairingService.swift */; };
 		C1C318D92A478E0000C6F29F /* HKUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C318D82A478E0000C6F29F /* HKUnit.swift */; };
 		C1D819B32AC9B60100C9416E /* LimitedQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27850BA2256724EF0020D109 /* LimitedQueue.swift */; };
+		7E576D2FA4A672651A7799D6 /* LibreTransmitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 432B0E971CDFC3C50045347B /* LibreTransmitterTests.swift */; };
+		7E5766CC68C2AC29CDC1AF20 /* GlucoseAlgorithmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E57DE074A76DC4BF850761E /* GlucoseAlgorithmTests.swift */; };
+		7E57434C1BFFF9400C9BF999 /* Libre2TrendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E577CACDB0124031A038328 /* Libre2TrendTests.swift */; };
+		7E570FE8A02B229ADEFD2B2B /* LibreTransmitter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 432B0E881CDFC3C50045347B /* LibreTransmitter.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -163,6 +167,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 43A8EC81210E664300A81379;
 			remoteInfo = LibreTransmitterUI;
+		};
+		7E5790C23677DAFF9FB06B95 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 432B0E7F1CDFC3C50045347B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 432B0E871CDFC3C50045347B;
+			remoteInfo = LibreTransmitter;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -298,6 +309,9 @@
 		C1BDBAFD2A43992A00A787D1 /* LibreDemoCGMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibreDemoCGMManager.swift; sourceTree = "<group>"; };
 		C1BDBAFE2A44FFD800A787D1 /* MockSensorPairingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSensorPairingService.swift; sourceTree = "<group>"; };
 		C1C318CF2A4748A100C6F29F /* MockBluetoothSearcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockBluetoothSearcher.swift; sourceTree = "<group>"; };
+		7E57DE074A76DC4BF850761E /* GlucoseAlgorithmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseAlgorithmTests.swift; sourceTree = "<group>"; };
+		7E577CACDB0124031A038328 /* Libre2TrendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Libre2TrendTests.swift; sourceTree = "<group>"; };
+		7E577329BE25550E6DF534FB /* LibreTransmitterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LibreTransmitterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -336,6 +350,14 @@
 			files = (
 				C1BDBAF02A4397E200A787D1 /* LibreTransmitter.framework in Frameworks */,
 				C1C318D22A475C0E00C6F29F /* LibreTransmitterUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7E57C5A7D2BFD6EC55E6CABF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7E570FE8A02B229ADEFD2B2B /* LibreTransmitter.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -555,6 +577,7 @@
 		432B0E891CDFC3C50045347B /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				7E577329BE25550E6DF534FB /* LibreTransmitterTests.xctest */,
 				432B0E881CDFC3C50045347B /* LibreTransmitter.framework */,
 				43A8EC82210E664300A81379 /* LibreTransmitterUI.framework */,
 				B40BF25E23ABD47400A43CEE /* LibreTransmitterPlugin.loopplugin */,
@@ -586,6 +609,8 @@
 			isa = PBXGroup;
 			children = (
 				432B0E971CDFC3C50045347B /* LibreTransmitterTests.swift */,
+				7E57DE074A76DC4BF850761E /* GlucoseAlgorithmTests.swift */,
+				7E577CACDB0124031A038328 /* Libre2TrendTests.swift */,
 				432B0E991CDFC3C50045347B /* Info.plist */,
 			);
 			path = LibreTransmitterTests;
@@ -768,6 +793,24 @@
 			productReference = C1BDBAFA2A4397E200A787D1 /* LibreDemoPlugin.loopplugin */;
 			productType = "com.apple.product-type.bundle";
 		};
+		432B0E911CDFC3C50045347B /* LibreTransmitterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7E573ADE3E9F74F1A06CBB65 /* Build configuration list for PBXNativeTarget "LibreTransmitterTests" */;
+			buildPhases = (
+				7E57B5FCB4CE1F0C66BB2EDF /* Sources */,
+				7E57C5A7D2BFD6EC55E6CABF /* Frameworks */,
+				7E57AA43023160C19E114163 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7E57FD3E78FF13D8F439D015 /* PBXTargetDependency */,
+			);
+			name = LibreTransmitterTests;
+			productName = LibreTransmitterTests;
+			productReference = 7E577329BE25550E6DF534FB /* LibreTransmitterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -836,6 +879,7 @@
 				43A8EC81210E664300A81379 /* LibreTransmitterUI */,
 				B40BF25D23ABD47400A43CEE /* LibreTransmitterPlugin */,
 				C1BDBAE72A4397E200A787D1 /* LibreDemoPlugin */,
+				432B0E911CDFC3C50045347B /* LibreTransmitterTests */,
 			);
 		};
 /* End PBXProject section */
@@ -876,6 +920,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C1BDBAF22A4397E200A787D1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7E57AA43023160C19E114163 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1024,6 +1075,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7E57B5FCB4CE1F0C66BB2EDF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7E576D2FA4A672651A7799D6 /* LibreTransmitterTests.swift in Sources */,
+				7E5766CC68C2AC29CDC1AF20 /* GlucoseAlgorithmTests.swift in Sources */,
+				7E57434C1BFFF9400C9BF999 /* Libre2TrendTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1051,6 +1112,11 @@
 			isa = PBXTargetDependency;
 			target = 43A8EC81210E664300A81379 /* LibreTransmitterUI */;
 			targetProxy = C1BDBAEB2A4397E200A787D1 /* PBXContainerItemProxy */;
+		};
+		7E57FD3E78FF13D8F439D015 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 432B0E871CDFC3C50045347B /* LibreTransmitter */;
+			targetProxy = 7E5790C23677DAFF9FB06B95 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1482,6 +1548,41 @@
 			};
 			name = Release;
 		};
+		7E57DB66304F5308193616E6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = LibreTransmitterTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.loopkit.LibreTransmitterTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7E57B4F8ACB10632A71598A0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = LibreTransmitterTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.loopkit.LibreTransmitterTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1526,6 +1627,15 @@
 			buildConfigurations = (
 				C1BDBAF82A4397E200A787D1 /* Debug */,
 				C1BDBAF92A4397E200A787D1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7E573ADE3E9F74F1A06CBB65 /* Build configuration list for PBXNativeTarget "LibreTransmitterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7E57DB66304F5308193616E6 /* Debug */,
+				7E57B4F8ACB10632A71598A0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

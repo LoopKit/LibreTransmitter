@@ -6,6 +6,9 @@
 import XCTest
 @testable import LibreTransmitter
 
+// Foundation also has a Measurement type
+private typealias Measurement = LibreTransmitter.Measurement
+
 class GlucoseAlgorithmTests: XCTestCase {
 
     // i2 = 509 selects t1 = 1.75 and t2 = 0.0706475, and i6 gives R = 67300 at rawTemperature 8000:
