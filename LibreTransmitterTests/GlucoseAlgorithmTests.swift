@@ -259,4 +259,25 @@ class GlucoseAlgorithmTests: XCTestCase {
             for: [measurement(minutes: 30)], calibrationInfo: cal, smoothTemperature: false, sensorStart: nil)
         XCTAssertNotNil(unknownStart.first!)
     }
+
+    func testDisplayProjectionIsAsymmetricAndStampedNow() {
+        // risingTrend climbs 2 raw/min; the newest reading is raw 1500 at readings[0].date.
+        let rising = risingTrend()
+        let up = rising.predictDisplayGlucose()
+        // rising -> projected ~5.5 min ahead: 1500 + 2 * 5.5 = 1511
+        XCTAssertEqual(up?.rawGlucose, 1511)
+        // stamped at the newest reading (a current display value), not a future minute
+        XCTAssertEqual(up?.date, rising[0].date)
+        XCTAssertEqual(up?.rawTemperature, 8100)
+
+        // Mirror it into a falling trend (newest still raw 1500, now declining 2 raw/min)
+        let falling = rising.map {
+            Measurement(date: $0.date, rawGlucose: 3000 - $0.rawGlucose,
+                        rawTemperature: $0.rawTemperature, rawTemperatureAdjustment: 0)
+        }
+        let down = falling.predictDisplayGlucose()
+        // falling -> projected only ~0.5 min ahead: 1500 - 2 * 0.5 = 1499 (conservative on the downside)
+        XCTAssertEqual(down?.rawGlucose, 1499)
+        XCTAssertEqual(down?.date, falling[0].date)
+    }
 }

@@ -310,14 +310,11 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 // MARK: - Convenience functions
 extension LibreTransmitterManagerV3 {
 
-    /// Glucose extrapolated `glucosePredictionMinutes` ahead and stamped at the newest reading,
-    /// to offset the lag of interstitial glucose. Only shown in the settings view, not sent to Loop
+    /// The projected current glucose that mirrors the official reader: a short asymmetric forward
+    /// extrapolation of the trend (see `predictDisplayGlucose`), stamped at the newest reading.
+    /// Only shown in the settings view, not sent to Loop.
     internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> LibreGlucose? {
-        // Increase to up to 15 to move closer to real blood sugar
-        // The cost is slightly more noise on consecutive readings
-        let glucosePredictionMinutes: Double = 10
-
-        guard let predicted = measurements.predictBloodSugar(glucosePredictionMinutes) else {
+        guard let predicted = measurements.predictDisplayGlucose() else {
             logger.info("not creating blood sugar prediction: not enough usable readings (\(measurements.count))")
             return nil
         }
@@ -328,7 +325,7 @@ extension LibreTransmitterManagerV3 {
             calibrationInfo: calibration,
             smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled)
         let newestIndex = measurements.indices.max { measurements[$0].date < measurements[$1].date }
-        let bgDate = predicted.date.addingTimeInterval(60 * -glucosePredictionMinutes)
+        let bgDate = predicted.date
 
         guard let newestIndex,
               let temperature = temperatures[newestIndex],

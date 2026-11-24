@@ -530,7 +530,8 @@ public extension Array where Element ==  Measurement {
             return nil
         }
 
-        return Measurement(date: newest.date.addingTimeInterval(60 * horizon),
+        // Stamp at the newest reading: this is the projected current value shown now, not a future reading.
+        return Measurement(date: newest.date,
                            rawGlucose: Int(predicted.rounded()),
                            rawTemperature: newest.rawTemperature,
                            rawTemperatureAdjustment: newest.rawTemperatureAdjustment)
