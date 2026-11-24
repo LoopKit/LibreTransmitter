@@ -263,10 +263,10 @@ fileprivate let t2 = [
 /// Functions return nil instead of NaN, infinity or crashing when the raw or calibration
 /// values fall outside the domain of the model.
 enum GlucoseAlgorithm {
-    /// Readings below this are reported as this value ("LO"). The sensor's specified range is 40-500 mg/dL,
-    /// and the linear model is unreliable below it since (g3 - t1) approaches zero
+    /// Readings below this are clamped to it (the sensor's rated lower bound; shown as "LO" by the reader).
+    /// The linear model is unreliable below it since (g3 - t1) approaches zero
     static let minimumGlucose = 40.0
-    /// Readings above this are discarded
+    /// Readings above this are clamped to it (the sensor's rated upper bound; shown as "HI" by the reader)
     static let maximumGlucose = 500.0
 
     /// Sensor operating temperature range (FreeStyle Libre spec, 10-45 °C). Outside this band the
@@ -361,10 +361,15 @@ enum GlucoseAlgorithm {
     /// Clamps a calibrated glucose value to the reportable range.
     /// Returns nil for missing, non positive and too high values
     static func reportableGlucose(_ glucose: Double?) -> Double? {
-        guard let glucose, glucose > 0, glucose <= maximumGlucose else {
+        guard let glucose, glucose.isFinite, glucose > 0 else {
             return nil
         }
-        return max(glucose, minimumGlucose)
+        // The sensor's specified range is 40-500 mg/dL and the linear model is unreliable outside it,
+        // so clamp to the range. The official reader does the same in spirit: it keeps the reading and
+        // shows "LO" below 40 or "HI" above 500 (exclusive bounds; 40 and 500 are shown as numbers)
+        // rather than dropping it. Clamping both ends - instead of clamping lows but discarding highs -
+        // avoids a silent gap during a very high reading, where no value would otherwise be reported.
+        return min(max(glucose, minimumGlucose), maximumGlucose)
     }
 
     /// Time based exponential moving average. Values must be sorted oldest first.

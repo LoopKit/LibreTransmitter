@@ -75,10 +75,13 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertNil(GlucoseAlgorithm.reportableGlucose(0))
         XCTAssertNil(GlucoseAlgorithm.reportableGlucose(.nan))
         XCTAssertNil(GlucoseAlgorithm.reportableGlucose(.infinity))
-        XCTAssertNil(GlucoseAlgorithm.reportableGlucose(500.1))
+        // Out-of-range readings clamp to the rated bounds (40..500) rather than being dropped
         XCTAssertEqual(GlucoseAlgorithm.reportableGlucose(12), 40)
+        XCTAssertEqual(GlucoseAlgorithm.reportableGlucose(39.9), 40)
         XCTAssertEqual(GlucoseAlgorithm.reportableGlucose(120.4), 120.4)
         XCTAssertEqual(GlucoseAlgorithm.reportableGlucose(500), 500)
+        XCTAssertEqual(GlucoseAlgorithm.reportableGlucose(500.1), 500)
+        XCTAssertEqual(GlucoseAlgorithm.reportableGlucose(742), 500)
     }
 
     func testLowPassFilterStepResponse() {
