@@ -219,7 +219,10 @@ public extension Libre2 {
     typealias LibreBLEResponse = (age: Int, trend: [Measurement], history: [Measurement], crcVerified: Bool)
     // swiftlint:enable all
 
-    static func parseBLEData(_ data: Data) -> LibreBLEResponse {
+    /// Parses a decrypted 44 byte BLE packet. `date` is when the packet was received.
+    /// Trend readings are 0, 2, 4, 6, 7, 12 and 15 minutes old, history readings lie on the sensor's
+    /// 15 minute grid; each reading is dated from its sensor minute (idValue) relative to the sensor age
+    static func parseBLEData(_ data: Data, date: Date = Date()) -> LibreBLEResponse {
         var measurementTrend: [Measurement] = []
         var measurementHistory: [Measurement] = []
         let age = Int(word(data[41], data[40]))
@@ -256,7 +259,7 @@ public extension Libre2 {
 
             // Record i is not i minutes old: trend records are ints[i] minutes
             // older than the packet, history records are 15-minute slots.
-            let timeStamp = Date().addingTimeInterval(Double(-60 * (age - idValue)))
+            let timeStamp = date.addingTimeInterval(Double(-60 * (age - idValue)))
             let measurementFactory = Measurement(date: timeStamp, rawGlucose: Int(rawSensorValue), rawTemperature: rawTemperature, rawTemperatureAdjustment: rawTemperatureAdjustment, idValue: idValue)
 
             if i < 7 {
@@ -270,6 +273,30 @@ public extension Libre2 {
         let history = measurementHistory.sorted(by: { $0.idValue < $1.idValue })
 
         return (age, trend, history, calculatedCrc == enclosedCrc)
+    }
+
+    /// Combines the trend readings of a packet with readings buffered from earlier packets,
+    /// so the result covers every minute within `window` of the newest reading instead of only
+    /// the packet's 0, 2, 4, 6, 7, 12 and 15 minute slots.
+    /// Readings are matched on idValue (the sensor's minute counter), so a minute is never included twice
+    static func mergeTrends(_ trends: [Measurement], buffered: [Measurement], window: TimeInterval = 20 * 60) -> [Measurement] {
+        guard let newest = trends.max(by: { $0.date < $1.date }) else {
+            return trends
+        }
+
+        let windowStart = newest.date - window
+        let minutesInPacket = Set(trends.map(\.idValue))
+        let earlier = buffered
+            .filter { $0.date > windowStart && !minutesInPacket.contains($0.idValue) }
+            .removingDuplicates(byKey: { $0.idValue })
+
+        return (trends + earlier).sorted { $0.idValue < $1.idValue }
+    }
+
+    /// The readings of a packet that are newer than everything already buffered
+    static func trendsToBuffer(_ trends: [Measurement], buffered: [Measurement]) -> [Measurement] {
+        let newestBufferedMinute = buffered.map(\.idValue).max() ?? Int.min
+        return trends.filter { $0.idValue > newestBufferedMinute }
     }
 }
 
