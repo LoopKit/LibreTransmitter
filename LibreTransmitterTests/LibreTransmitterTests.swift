@@ -142,4 +142,13 @@ class LibreTransmitterTests: XCTestCase {
         )
     }
 
+    func testWrongSensorTypeShowsThePatchInfo() {
+        // A first byte that isn't a known Libre 2 one, as a new sensor batch can report.
+        let patchInfo = Data([0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC])
+        XCTAssertEqual(SensorType(patchInfo: patchInfo), .unknown)
+
+        let error = PairingError.wrongSensorType(patchInfo: patchInfo)
+        XCTAssertEqual(error.localizedDescription, "Wrong sensor type detected (patch info: 123456789ABC)")
+    }
+
 }

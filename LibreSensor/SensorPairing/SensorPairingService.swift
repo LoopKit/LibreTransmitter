@@ -8,11 +8,14 @@
 import Foundation
 import Combine
 import CoreNFC
+import OSLog
 
 public enum PairingError: Error {
     case noTagInfo
     case noSensorData
-    case wrongSensorType
+    /// The sensor's patch info, shown so that users can report it: a new Libre 2 batch
+    /// can report a first byte we don't know yet.
+    case wrongSensorType(patchInfo: Data)
     case decryptionError
     case noPatchInfo
     case nfcNotSupported
@@ -25,8 +28,9 @@ extension PairingError: LocalizedError {
             return LocalizedString("Could not get tag info", comment: "error description for PairingError.noTagInfo")
         case .noSensorData:
             return LocalizedString("Could not get sensor data", comment: "error description for PairingError.noSensorData")
-        case .wrongSensorType:
-            return LocalizedString("Wrong sensor type detected", comment: "error description for PairingError.wrongSensorType")
+        case .wrongSensorType(let patchInfo):
+            let message = LocalizedString("Wrong sensor type detected", comment: "error description for PairingError.wrongSensorType")
+            return "\(message) (patch info: \(patchInfo.hexEncodedString().uppercased()))"
         case .decryptionError:
             return LocalizedString("Could not decrypt sensor contents", comment: "error description for PairingError.decryptionError")
         case .noPatchInfo:
@@ -55,6 +59,8 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
     private let accessQueue = DispatchQueue(label: "libre-direct.nfc-access-queue")
 
     private let unlockCode: UInt32 = 42 // 42
+
+    private let logger = Logger(forType: SensorPairingService.self)
 
     public var onCancel: (() -> Void)?
 
@@ -191,8 +197,10 @@ public class SensorPairingService: NSObject, NFCTagReaderSessionDelegate, Sensor
                                         }
                                         
                                         guard sensorType == .libre2  else {
-                                            session.invalidate(errorMessage: PairingError.wrongSensorType.localizedDescription)
-                                            self.sendError(PairingError.noSensorData)
+                                            let error = PairingError.wrongSensorType(patchInfo: patchInfo)
+                                            self.logger.error("Pairing stopped, not a Libre 2 sensor: patch info \(patchHex, privacy: .public), type \(sensorType.description, privacy: .public)")
+                                            session.invalidate(errorMessage: error.localizedDescription)
+                                            self.sendError(error)
                                             return
                                         }
                                         

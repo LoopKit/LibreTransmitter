@@ -84,7 +84,7 @@ public final class SimulatedSensorPairingService: SensorPairingProtocol {
         }
         let sensorType = SensorType(patchInfo: patchInfo)
         guard sensorType == .libre2 else {
-            throw PairingError.wrongSensorType
+            throw PairingError.wrongSensorType(patchInfo: patchInfo)
         }
 
         let decryptedBytes: [UInt8]
