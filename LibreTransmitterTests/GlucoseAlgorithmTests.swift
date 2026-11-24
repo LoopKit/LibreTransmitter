@@ -237,4 +237,26 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertNil(measurement(rawTemperature: 30000).temperature(calibrationInfo: calibration()))
         XCTAssertNil(measurement(rawTemperature: 30000).calibratedGlucose(calibrationInfo: calibration()))
     }
+
+    func testWarmupReadingsAreSuppressed() {
+        let start = Date(timeIntervalSince1970: 1_000_000)
+        let cal = calibration()
+        // Within the 60 minute warmup period -> dropped
+        let during = GlucoseAlgorithm.calibratedGlucoses(
+            for: [measurement(minutes: 30)], calibrationInfo: cal, smoothTemperature: false, sensorStart: start)
+        XCTAssertNil(during.first!)
+        // After warmup -> a value is produced
+        let after = GlucoseAlgorithm.calibratedGlucoses(
+            for: [measurement(minutes: 90)], calibrationInfo: cal, smoothTemperature: false, sensorStart: start)
+        XCTAssertNotNil(after.first!)
+        // At exactly the warmup boundary (age == warmupInterval) the reading is allowed; just inside is not
+        XCTAssertNotNil(GlucoseAlgorithm.calibratedGlucoses(
+            for: [measurement(minutes: 60)], calibrationInfo: cal, smoothTemperature: false, sensorStart: start).first!)
+        XCTAssertNil(GlucoseAlgorithm.calibratedGlucoses(
+            for: [measurement(minutes: 59)], calibrationInfo: cal, smoothTemperature: false, sensorStart: start).first!)
+        // Without a known sensor start time, readings are not gated
+        let unknownStart = GlucoseAlgorithm.calibratedGlucoses(
+            for: [measurement(minutes: 30)], calibrationInfo: cal, smoothTemperature: false, sensorStart: nil)
+        XCTAssertNotNil(unknownStart.first!)
+    }
 }

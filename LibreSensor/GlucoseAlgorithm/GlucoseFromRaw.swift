@@ -276,6 +276,11 @@ enum GlucoseAlgorithm {
     /// Normal on-body readings sit around 30-37 °C, so this only rejects clearly invalid data.
     static let operatingTemperatureRange = 10.0 ... 45.0
 
+    /// Sensor warmup period. Readings taken before the sensor has equilibrated are unreliable, so
+    /// they are dropped when the sensor start time is known, matching the official algorithm's
+    /// SensorInWarmupException. FreeStyle Libre 2 warms up for 60 minutes.
+    static let warmupInterval: TimeInterval = 60 * 60
+
     /// Time constant of the low pass filter applied to sensor temperature.
     /// The thermistor sits on the skin side and reacts faster than interstitial fluid, so unfiltered
     /// temperature changes show up as glucose noise of about 5-7 % per °C
@@ -408,11 +413,21 @@ enum GlucoseAlgorithm {
         let temperatures = temperatures(for: measurements, calibrationInfo: calibrationInfo, smoothTemperature: smoothTemperature)
 
         return zip(measurements, temperatures).map { measurement, temperature in
-            temperature.flatMap {
+            let sensorAge = sensorStart.map { measurement.date.timeIntervalSince($0) }
+
+            // Drop readings taken during the sensor warmup period: the sensor has not equilibrated
+            // yet and its output is unreliable, so the official algorithm reports no value
+            // (SensorInWarmupException) until warmup completes. Only applied when the sensor start
+            // time is known; otherwise readings pass through unchanged.
+            if let sensorAge, sensorAge < warmupInterval {
+                return nil
+            }
+
+            return temperature.flatMap {
                 measurement.calibratedGlucose(
                     calibrationInfo: calibrationInfo,
                     temperature: $0,
-                    sensorAge: sensorStart.map { measurement.date.timeIntervalSince($0) })
+                    sensorAge: sensorAge)
             }
         }
     }
