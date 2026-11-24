@@ -483,4 +483,65 @@ public extension Array where Element ==  Measurement {
                            rawTemperature: newest.rawTemperature,
                            rawTemperatureAdjustment: newest.rawTemperatureAdjustment)
     }
+
+    /// Parameters of the display-only current-glucose projection that mirrors the official reader,
+    /// which shows a short asymmetric forward extrapolation of the trend rather than the raw latest
+    /// reading. Reverse-engineered from a small set of reference scans, so provisional and tunable.
+    enum DisplayProjection {
+        /// Window (minutes) the rate of change is estimated over
+        static let rateWindowMinutes: Double = 6
+        /// How far ahead (minutes) a rising trend is projected
+        static let risingProjectionMinutes: Double = 5.5
+        /// How far ahead a falling trend is projected. The official reader is conservative on the
+        /// downside and barely projects falling glucose, so this is close to zero.
+        static let fallingProjectionMinutes: Double = 0.5
+    }
+
+    /// Display-only projection of the current glucose that mirrors the official reader: the recent
+    /// trend is extrapolated a few minutes ahead, further when rising than when falling. Operates on
+    /// raw glucose; the caller calibrates the result. Returns nil with too few recent readings.
+    ///
+    /// For display parity only. It must NOT drive dosing: the consumer (e.g. Loop) applies its own
+    /// momentum prediction, and projecting here as well would double-count the trend.
+    func predictDisplayGlucose(minimumReadings: Int = 3) -> Measurement? {
+        let usable = filter { $0.rawGlucose > 0 && $0.error == [.OK] }
+            .sorted { $0.date < $1.date }
+
+        guard let newest = usable.last else {
+            return nil
+        }
+
+        let windowStart = newest.date.addingTimeInterval(-60 * DisplayProjection.rateWindowMinutes)
+        let window = usable.filter { $0.date >= windowStart }
+        guard window.count >= minimumReadings else {
+            return nil
+        }
+
+        let minutesAgo = window.map { $0.date.timeIntervalSince(newest.date) / 60 }
+        let rawGlucoseValues = window.map { Double($0.rawGlucose) }
+        let slope = regressionSlope(minutesAgo, rawGlucoseValues)
+        guard slope.isFinite else {
+            return nil
+        }
+
+        let horizon = slope >= 0 ? DisplayProjection.risingProjectionMinutes : DisplayProjection.fallingProjectionMinutes
+        let predicted = Double(newest.rawGlucose) + slope * horizon
+        guard predicted.isFinite else {
+            return nil
+        }
+
+        return Measurement(date: newest.date.addingTimeInterval(60 * horizon),
+                           rawGlucose: Int(predicted.rounded()),
+                           rawTemperature: newest.rawTemperature,
+                           rawTemperatureAdjustment: newest.rawTemperatureAdjustment)
+    }
+
+    /// Slope (units per minute) of the least squares line through the points. Zero when degenerate.
+    private func regressionSlope(_ xs: [Double], _ ys: [Double]) -> Double {
+        let denom = average(multiply(xs, xs)) - pow(average(xs), 2)
+        guard denom != 0 else {
+            return 0
+        }
+        return (average(multiply(xs, ys)) - average(xs) * average(ys)) / denom
+    }
 }
