@@ -283,7 +283,9 @@ enum GlucoseAlgorithm {
 
     /// Time constant of the low pass filter applied to sensor temperature.
     /// The thermistor sits on the skin side and reacts faster than interstitial fluid, so unfiltered
-    /// temperature changes show up as glucose noise of about 5-7 % per °C
+    /// temperature changes show up as glucose noise of about 4.5 % per °C (g2 = 1.045^(32.5 - t)).
+    /// That lag is assumed, not measured: if the sensor's chemistry follows the skin temperature at
+    /// once, the filter instead delays a real temperature change
     static let temperatureTimeConstant: TimeInterval = 5 * 60
 
     /// Parameters of the sensor age correction, see `ageFactor`.
