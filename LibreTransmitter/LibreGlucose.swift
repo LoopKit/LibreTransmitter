@@ -19,10 +19,25 @@ public struct LibreGlucose: Codable, Hashable {
 
     public var timestamp: Date
 
-    public init(unsmoothedGlucose: Double, glucoseDouble: Double, error: [MeasurementError] = [MeasurementError.OK], timestamp: Date) {
+    /// Set when the reading was outside the sensor's 40-500 mg/dL range: the glucose value is clamped
+    /// to the boundary and this tells Loop/Nightscout the true value is below/above range (shown as
+    /// LO/HI). This is the LoopKit mechanism for out-of-range readings - not isDisplayOnly, which
+    /// would make Loop ignore the value and is unsafe for a genuine low.
+    public var condition: GlucoseCondition?
+
+    public init(unsmoothedGlucose: Double, glucoseDouble: Double, error: [MeasurementError] = [MeasurementError.OK], timestamp: Date, condition: GlucoseCondition? = nil) {
         self.unsmoothedGlucose = unsmoothedGlucose
         self.glucoseDouble = glucoseDouble
         self.timestamp = timestamp
+        self.condition = condition
+    }
+
+    /// Classifies a calibrated reading against the sensor's reportable range for the sample condition.
+    static func rangeCondition(for calibrated: Double?) -> GlucoseCondition? {
+        guard let calibrated else { return nil }
+        if calibrated < GlucoseAlgorithm.minimumGlucose { return .belowRange }
+        if calibrated > GlucoseAlgorithm.maximumGlucose { return .aboveRange }
+        return nil
     }
 
     public static func timeDifference(oldGlucose: LibreGlucose, newGlucose: LibreGlucose) -> TimeInterval {
@@ -147,7 +162,8 @@ extension LibreGlucose {
                 unsmoothedGlucose: glucose,
                 glucoseDouble: glucose,
                 error: historical.error,
-                timestamp: historical.date)
+                timestamp: historical.date,
+                condition: Self.rangeCondition(for: calibrated))
         }
     }
 
@@ -173,7 +189,8 @@ extension LibreGlucose {
                     unsmoothedGlucose: glucose,
                     glucoseDouble: 0.0,
                     error: trend.error,
-                    timestamp: trend.date))
+                    timestamp: trend.date,
+                    condition: Self.rangeCondition(for: calibrated)))
             }
 
             // Just for expliciticity, if one of the values are invalid or 0,

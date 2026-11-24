@@ -513,7 +513,7 @@ extension LibreTransmitterManagerV3 {
                 return NewGlucoseSample(
                     date: $0.startDate,
                     quantity: $0.quantity,
-                    condition: nil,
+                    condition: $0.condition,
                     trend: trend,
                     trendRate: trendRate,
                     isDisplayOnly: false,
