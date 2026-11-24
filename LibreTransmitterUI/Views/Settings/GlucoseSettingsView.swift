@@ -16,8 +16,7 @@ struct GlucoseSettingsView: View {
 
     @AppStorage("com.loopkit.libreSyncToNs") var mmSyncToNS: Bool = true
     @AppStorage("com.loopkit.libreBackfillFromHistory") var mmBackfillFromHistory: Bool = true
-    @AppStorage("com.loopkit.libreGlucoseSmoothingEnabled") private var glucoseSmoothingEnabled = true
-    @AppStorage("com.loopkit.libreTemperatureSmoothingEnabled") private var temperatureSmoothingEnabled = true
+    @State private var smoothingMode = UserDefaults.standard.glucoseSmoothingMode
     @AppStorage("com.loopkit.libreshouldPersistSensorData") var shouldPersistSensorData: Bool = false
 
     @State private var authSuccess = false
@@ -39,12 +38,18 @@ struct GlucoseSettingsView: View {
 
             }
             Section {
-                Toggle("Smooth glucose readings", isOn: $glucoseSmoothingEnabled)
-                Toggle("Smooth sensor temperature", isOn: $temperatureSmoothingEnabled)
+                Picker("Smoothing", selection: $smoothingMode) {
+                    Text("Off").tag(GlucoseSmoothingMode.off)
+                    Text("Temperature").tag(GlucoseSmoothingMode.temperature)
+                    Text("Glucose (previous)").tag(GlucoseSmoothingMode.glucose)
+                }
+                .onChange(of: smoothingMode) { _, mode in
+                    UserDefaults.standard.glucoseSmoothingMode = mode
+                }
             } header: {
                 Text("Glucose processing")
             } footer: {
-                Text("Applies a five-point moving average to newly received trend readings. Temperature smoothing filters the sensor temperature over about five minutes before temperature compensation.")
+                Text("Temperature filters the sensor temperature over about five minutes before temperature compensation; readings are not averaged. Glucose (previous) averages newly received trend readings over about five minutes, as before, which calms jitter but makes readings lag a changing glucose by about two minutes. Only one is applied at a time.")
             }
             Section {
                 Toggle("Send every Libre 2 / Libre 2 Plus reading (experimental)", isOn: Binding(

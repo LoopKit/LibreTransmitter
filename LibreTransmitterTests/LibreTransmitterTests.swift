@@ -26,20 +26,41 @@ class LibreTransmitterTests: XCTestCase {
         XCTAssertEqual(Features.minimumDirectUpdateInterval(oneMinuteReadingsEnabled: false), 270)
     }
 
-    func testGlucoseSmoothingDefaultsToEnabled() {
+    func testGlucoseSmoothingDefaultsToThePreviousGlucoseAverage() {
         let defaults = UserDefaults(suiteName: #function)!
         defaults.removePersistentDomain(forName: #function)
 
+        XCTAssertEqual(defaults.glucoseSmoothingMode, .glucose)
         XCTAssertTrue(defaults.glucoseSmoothingEnabled)
+        XCTAssertFalse(defaults.temperatureSmoothingEnabled)
     }
 
-    func testGlucoseSmoothingCanBeDisabled() {
+    func testGlucoseSmoothingModes() {
         let defaults = UserDefaults(suiteName: #function)!
         defaults.removePersistentDomain(forName: #function)
 
-        defaults.glucoseSmoothingEnabled = false
-
+        defaults.glucoseSmoothingMode = .temperature
         XCTAssertFalse(defaults.glucoseSmoothingEnabled)
+        XCTAssertTrue(defaults.temperatureSmoothingEnabled)
+
+        defaults.glucoseSmoothingMode = .glucose
+        XCTAssertTrue(defaults.glucoseSmoothingEnabled)
+        XCTAssertFalse(defaults.temperatureSmoothingEnabled)
+
+        defaults.glucoseSmoothingMode = .off
+        XCTAssertFalse(defaults.glucoseSmoothingEnabled)
+        XCTAssertFalse(defaults.temperatureSmoothingEnabled)
+    }
+
+    func testGlucoseSmoothingTurnedOffBeforeTheModeIsOff() {
+        let defaults = UserDefaults(suiteName: #function)!
+        defaults.removePersistentDomain(forName: #function)
+
+        defaults.set(false, forKey: "com.loopkit.libreGlucoseSmoothingEnabled")
+        XCTAssertEqual(defaults.glucoseSmoothingMode, .off)
+
+        defaults.set(true, forKey: "com.loopkit.libreGlucoseSmoothingEnabled")
+        XCTAssertEqual(defaults.glucoseSmoothingMode, .glucose)
     }
 
     func testTrendUsesSmoothedGlucoseValues() {
