@@ -32,4 +32,26 @@ class LibreTransmitterTests: XCTestCase {
         }
     }
 
+    func testLibre2EUWithFirstByte84IsLibre2() {
+        // Reported by a user with an EU sensor whose serial starts with 303
+        XCTAssertEqual(SensorType(patchInfo: Data([0x84, 0x0E, 0x30, 0x01, 0xA0, 0x2A])), .libre2)
+    }
+
+    func testUnlistedFirstByteWithLibre2EUPatchInfoIsLibre2() {
+        XCTAssertEqual(SensorType(patchInfo: Data([0x55, 0x0E, 0x30, 0x01, 0x00, 0x00])), .libre2)
+        // Generation 2 (security version 9 or more), another region or another family stays unknown
+        XCTAssertEqual(SensorType(patchInfo: Data([0x55, 0x0E, 0x39, 0x01, 0x00, 0x00])), .unknown)
+        XCTAssertEqual(SensorType(patchInfo: Data([0x55, 0x0E, 0x30, 0x02, 0x00, 0x00])), .unknown)
+        XCTAssertEqual(SensorType(patchInfo: Data([0x55, 0x0E, 0x70, 0x01, 0x00, 0x00])), .unknown)
+    }
+
+    func testWrongSensorTypeShowsThePatchInfo() {
+        // A first byte that isn't a known Libre 2 one, as a new sensor batch can report.
+        let patchInfo = Data([0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC])
+        XCTAssertEqual(SensorType(patchInfo: patchInfo), .unknown)
+
+        let error = PairingError.wrongSensorType(patchInfo: patchInfo)
+        XCTAssertEqual(error.localizedDescription, "Wrong sensor type detected (patch info: 123456789ABC)")
+    }
+
 }
