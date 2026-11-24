@@ -117,10 +117,23 @@ public enum SensorType: String, CustomStringConvertible {
         default:
             if patchInfo.count == 24 {
                 self = .libre3
+            } else if Self.isFirstGenerationLibre2EU(patchInfo) {
+                // A first byte from a batch not listed above: the rest still says Libre 2 EU
+                self = .libre2
             } else {
                 self = .unknown
             }
         }
+    }
+
+    /// Libre 2 family (3) with a security version below generation 2's (9), in the EU region (1)
+    static func isFirstGenerationLibre2EU(_ patchInfo: Data) -> Bool {
+        guard patchInfo.count == 6 else {
+            return false
+        }
+        let family = patchInfo[2] >> 4
+        let securityVersion = patchInfo[2] & 0x0F
+        return family == 3 && securityVersion < 9 && patchInfo[3] == 0x01
     }
 
     public var description: String { self.rawValue }
