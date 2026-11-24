@@ -456,38 +456,31 @@ public extension Array where Element ==  Measurement {
         return { x in intercept + slope * x }
     }
 
-    func predictBloodSugar(_ minutes: Double = 10) -> Measurement? {
+    /// Extrapolates the raw glucose of the measurements `minutes` past the newest one, using a linear fit.
+    /// Readings without a raw value, or flagged with a sensor error, are left out of the fit.
+    /// The predicted measurement carries the raw temperature of the newest reading.
+    /// Returns nil when fewer than `minimumReadings` readings are usable
+    func predictBloodSugar(_ minutes: Double = 10, minimumReadings: Int = 10) -> Measurement? {
+        let usable = filter { $0.rawGlucose > 0 && $0.error == [.OK] }
+            .sorted { $0.date < $1.date }
 
-        guard count > 15 else {
-            return first
-        }
-
-        guard let first else {
+        guard usable.count >= minimumReadings, let newest = usable.last else {
             return nil
         }
-        let sorted = sorted { $0.date < $1.date}
 
-        // keep the recent raw temperatures, we don't want to apply linear regression to them
-        let mostRecentTemperature = first.rawTemperature
-        let mostRecentAdjustment = first.rawTemperatureAdjustment
-        let mostRecentDate = first.date
-        let futureDate = mostRecentDate.addingTimeInterval(60*minutes)
+        // Minutes relative to the newest reading. Absolute timestamps (~1.8e9 s) lose precision
+        // in average(x * x) - average(x)^2
+        let minutesAgo = usable.map { $0.date.timeIntervalSince(newest.date) / 60 }
+        let rawGlucoseValues = usable.map { Double($0.rawGlucose) }
 
-        let glucoseAge = sorted.compactMap { measurement in
-            Double(measurement.date.timeIntervalSince1970)
+        let glucosePrediction = linearRegression(minutesAgo, rawGlucoseValues)(minutes)
+        guard glucosePrediction.isFinite else {
+            return nil
         }
 
-        let rawGlucoseValues = sorted.compactMap { measurement in
-            Double(measurement.rawGlucose)
-        }
-
-        let glucosePrediction = linearRegression(glucoseAge, rawGlucoseValues)(futureDate.timeIntervalSince1970)
-
-        let predicted = Measurement(date: futureDate,
-                                   rawGlucose: Int(glucosePrediction.rounded()),
-                                   rawTemperature: mostRecentTemperature,
-                                   rawTemperatureAdjustment: mostRecentAdjustment)
-        return predicted
-
+        return Measurement(date: newest.date.addingTimeInterval(60 * minutes),
+                           rawGlucose: Int(glucosePrediction.rounded()),
+                           rawTemperature: newest.rawTemperature,
+                           rawTemperatureAdjustment: newest.rawTemperatureAdjustment)
     }
 }

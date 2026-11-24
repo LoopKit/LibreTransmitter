@@ -375,10 +375,9 @@ enum GlucoseAlgorithm {
         }
     }
 
-    /// Calibrated glucose for each measurement, in the same order as `measurements`.
-    /// When `smoothTemperature` is true, sensor temperature is low pass filtered across the measurements first.
-    /// `sensorStart` enables the sensor age correction
-    static func calibratedGlucoses(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool, sensorStart: Date? = nil) -> [Double?] {
+    /// Sensor temperature in °C for each measurement, in the same order as `measurements`,
+    /// low pass filtered across the measurements when `smoothTemperature` is true
+    static func temperatures(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool) -> [Double?] {
         var temperatures = measurements.map { $0.temperature(calibrationInfo: calibrationInfo) }
 
         if smoothTemperature {
@@ -388,6 +387,15 @@ enum GlucoseAlgorithm {
                 temperatures[index] = temperature
             }
         }
+
+        return temperatures
+    }
+
+    /// Calibrated glucose for each measurement, in the same order as `measurements`.
+    /// When `smoothTemperature` is true, sensor temperature is low pass filtered across the measurements first.
+    /// `sensorStart` enables the sensor age correction
+    static func calibratedGlucoses(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool, sensorStart: Date? = nil) -> [Double?] {
+        let temperatures = temperatures(for: measurements, calibrationInfo: calibrationInfo, smoothTemperature: smoothTemperature)
 
         return zip(measurements, temperatures).map { measurement, temperature in
             temperature.flatMap {

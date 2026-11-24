@@ -154,6 +154,60 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertEqual(GlucoseAlgorithm.ageFactor(0, correction: .init(earlyDeficit: 2)), 0.5)
     }
 
+    // 16 one minute readings rising 2 raw units per minute, newest (raw 1500) first
+    private func risingTrend(at date: Date = Date(timeIntervalSince1970: 1_792_000_000)) -> [Measurement] {
+        (0..<16).map { minute in
+            Measurement(date: date.addingTimeInterval(-60 * Double(minute)), rawGlucose: 1500 - 2 * minute,
+                        rawTemperature: minute == 0 ? 8100 : 8000, rawTemperatureAdjustment: 0)
+        }
+    }
+
+    func testPredictionExtrapolatesFromNewestReading() {
+        let readings = risingTrend()
+        let predicted = readings.predictBloodSugar(10)
+
+        XCTAssertEqual(predicted?.rawGlucose, 1520)
+        XCTAssertEqual(predicted?.date, readings[0].date.addingTimeInterval(600))
+        // temperature comes from the newest reading
+        XCTAssertEqual(predicted?.rawTemperature, 8100)
+    }
+
+    func testPredictionDoesNotDependOnInputOrder() {
+        let readings = risingTrend()
+
+        XCTAssertEqual(readings.reversed().predictBloodSugar(10)?.rawGlucose, 1520)
+        XCTAssertEqual(readings.reversed().predictBloodSugar(10)?.rawTemperature, 8100)
+    }
+
+    func testPredictionIsExactWithAbsoluteTimestamps() {
+        // regression on absolute Unix timestamps lost precision to cancellation:
+        // at these timestamps it predicted 1519 or 1521
+        for timestamp in [1_792_004_800.0, 1_792_006_660, 1_792_022_020] {
+            let readings = risingTrend(at: Date(timeIntervalSince1970: timestamp))
+            XCTAssertEqual(readings.predictBloodSugar(10)?.rawGlucose, 1520)
+        }
+    }
+
+    func testPredictionSkipsInvalidReadings() {
+        var readings = risingTrend()
+        readings[5] = Measurement(date: readings[5].date, rawGlucose: 0, rawTemperature: 8000, rawTemperatureAdjustment: 0)
+
+        XCTAssertEqual(readings.predictBloodSugar(10)?.rawGlucose, 1520)
+    }
+
+    func testPredictionRequiresEnoughReadings() {
+        XCTAssertNil(Array(risingTrend().prefix(9)).predictBloodSugar(10))
+        XCTAssertNotNil(Array(risingTrend().prefix(10)).predictBloodSugar(10))
+        XCTAssertNil([Measurement]().predictBloodSugar(10))
+    }
+
+    func testPredictionWithIdenticalTimestampsReturnsNil() {
+        let date = Date(timeIntervalSince1970: 1_792_000_000)
+        let readings = (0..<12).map { Measurement(date: date, rawGlucose: 1500 + $0, rawTemperature: 8000, rawTemperatureAdjustment: 0) }
+
+        XCTAssertNil(readings.predictBloodSugar(10))
+    }
+
     func testCalibratedGlucosesKeepInputOrderAndInvalidReadings() {
         let readings = [
             measurement(minutes: 0, rawGlucose: 1200),
