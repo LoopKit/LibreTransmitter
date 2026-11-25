@@ -99,7 +99,7 @@ extension LibreTransmitterManagerV3 {
                     trendRate: newestSample.trendRate
                 )
             }
-            self.latestPrediction =  self.createBloodSugarPrediction(bleData.trend, calibration: calibrationData, sensorStart: Date() - TimeInterval(minutes: Double(bleData.age)))
+            self.latestPrediction =  self.createBloodSugarPrediction(bleData.trend, calibration: calibrationData)
             self.logger.debug("latestbackfill set to \(self.latestBackfill.debugDescription)")
             self.countTimesWithoutData = 0
         }

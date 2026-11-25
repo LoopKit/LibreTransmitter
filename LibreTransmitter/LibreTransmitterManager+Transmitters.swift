@@ -159,7 +159,7 @@ extension LibreTransmitterManagerV3 {
         let trends = data.trendMeasurements()
         let sensorStart = data.date.addingTimeInterval(-60 * Double(data.minutesSinceStart))
 
-        if let temp = createBloodSugarPrediction(trends, calibration: calibration, sensorStart: sensorStart) {
+        if let temp = createBloodSugarPrediction(trends, calibration: calibration) {
             prediction.append(temp)
         }
 

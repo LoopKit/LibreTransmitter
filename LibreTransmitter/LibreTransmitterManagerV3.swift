@@ -313,7 +313,7 @@ extension LibreTransmitterManagerV3 {
     /// The projected current glucose that mirrors the official reader: a short asymmetric forward
     /// extrapolation of the trend (see `predictDisplayGlucose`), stamped at the newest reading.
     /// Only shown in the settings view, not sent to Loop.
-    internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> LibreGlucose? {
+    internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo) -> LibreGlucose? {
         guard let predicted = measurements.predictDisplayGlucose() else {
             logger.info("not creating blood sugar prediction: not enough usable readings (\(measurements.count))")
             return nil
@@ -331,8 +331,7 @@ extension LibreTransmitterManagerV3 {
               let temperature = temperatures[newestIndex],
               let currentBg = GlucoseAlgorithm.reportableGlucose(predicted.calibratedGlucose(
                 calibrationInfo: calibration,
-                temperature: temperature,
-                sensorAge: sensorStart.map { bgDate.timeIntervalSince($0) })) else {
+                temperature: temperature)) else {
             logger.debug("Tried to predict glucose value but the result was outside the reportable range")
             return nil
         }

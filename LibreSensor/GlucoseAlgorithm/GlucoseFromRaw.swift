@@ -288,23 +288,6 @@ enum GlucoseAlgorithm {
     /// once, the filter instead delays a real temperature change
     static let temperatureTimeConstant: TimeInterval = 5 * 60
 
-    /// Parameters of the sensor age correction, see `ageFactor`.
-    /// Neutral (no correction) until fitted against reference blood glucose measurements:
-    /// a wrong age correction biases every reading in one direction for days, which is worse than none
-    struct AgeCorrection {
-        /// Fractional sensitivity deficit right after warmup ("day one effect"); 0.1 means 10 % low
-        var earlyDeficit = 0.0
-        /// How fast the early deficit fades
-        var earlyTimeConstant: TimeInterval = 6 * 60 * 60
-        /// Fractional sensitivity change at `maxAge`, linear in between
-        var drift = 0.0
-        var maxAge: TimeInterval = 14 * 24 * 60 * 60
-
-        static let neutral = AgeCorrection()
-    }
-
-    static let ageCorrection = AgeCorrection.neutral
-
     private static let ca = 0.0009180023
     private static let cb = 0.0001964561
     private static let cc = 0.0000007061775
@@ -333,7 +316,7 @@ enum GlucoseAlgorithm {
     }
 
     /// Glucose in mg/dL from the raw glucose reading at the given sensor temperature
-    static func glucose(rawGlucose: Int, temperature: Double, sensorAge: TimeInterval? = nil, calibrationInfo: SensorData.CalibrationInfo) -> Double? {
+    static func glucose(rawGlucose: Int, temperature: Double, calibrationInfo: SensorData.CalibrationInfo) -> Double? {
         let index = calibrationInfo.i2 - 1
         guard t1.indices.contains(index), calibrationInfo.i4 != calibrationInfo.i3 else {
             return nil
@@ -341,23 +324,9 @@ enum GlucoseAlgorithm {
 
         let g1 = 65 * (Double(rawGlucose) - calibrationInfo.i3) / (calibrationInfo.i4 - calibrationInfo.i3)
         let g2 = pow(1.045, 32.5 - temperature)
-        let sensitivity = t2[index] * ageFactor(sensorAge)
-        let glucose = (g1 * g2 - t1[index]) / sensitivity
+        let glucose = (g1 * g2 - t1[index]) / t2[index]
 
         return glucose.isFinite ? glucose : nil
-    }
-
-    /// Relative sensor sensitivity at the given age:
-    /// f(age) = 1 - earlyDeficit * e^(-age / earlyTimeConstant) + drift * min(age / maxAge, 1).
-    /// Returns 1 for an unknown or negative age
-    static func ageFactor(_ age: TimeInterval?, correction: AgeCorrection = ageCorrection) -> Double {
-        guard let age, age >= 0 else {
-            return 1
-        }
-        let factor = 1 - correction.earlyDeficit * exp(-age / correction.earlyTimeConstant)
-            + correction.drift * min(age / correction.maxAge, 1)
-        // never let a misconfigured correction flip or zero the sensitivity
-        return max(factor, 0.5)
     }
 
     /// Clamps a calibrated glucose value to the reportable range.
@@ -415,7 +384,7 @@ enum GlucoseAlgorithm {
 
     /// Calibrated glucose for each measurement, in the same order as `measurements`.
     /// When `smoothTemperature` is true, sensor temperature is low pass filtered across the measurements first.
-    /// `sensorStart` enables the sensor age correction
+    /// `sensorStart` drops readings taken during the sensor warmup period
     static func calibratedGlucoses(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool, sensorStart: Date? = nil) -> [Double?] {
         let temperatures = temperatures(for: measurements, calibrationInfo: calibrationInfo, smoothTemperature: smoothTemperature)
 
@@ -431,10 +400,7 @@ enum GlucoseAlgorithm {
             }
 
             return temperature.flatMap {
-                measurement.calibratedGlucose(
-                    calibrationInfo: calibrationInfo,
-                    temperature: $0,
-                    sensorAge: sensorAge)
+                measurement.calibratedGlucose(calibrationInfo: calibrationInfo, temperature: $0)
             }
         }
     }
@@ -447,10 +413,10 @@ extension MeasurementProtocol {
     }
 
     /// Glucose in mg/dL, using this reading's own temperature unless another (e.g. filtered) temperature is given
-    func glucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo, temperature: Double? = nil, sensorAge: TimeInterval? = nil) -> Double? {
+    func glucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo, temperature: Double? = nil) -> Double? {
         guard let temperature = temperature ?? self.temperature(calibrationInfo: calibrationInfo) else {
             return nil
         }
-        return GlucoseAlgorithm.glucose(rawGlucose: rawGlucose, temperature: temperature, sensorAge: sensorAge, calibrationInfo: calibrationInfo)
+        return GlucoseAlgorithm.glucose(rawGlucose: rawGlucose, temperature: temperature, calibrationInfo: calibrationInfo)
     }
 }
