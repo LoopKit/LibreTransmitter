@@ -302,3 +302,154 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertEqual(Projection.limitingFall(144, newest: 120), 144)
     }
 }
+
+// MARK: - Regression vectors from the official reader's algorithm
+
+/// Frames built from `Libre2.Example2` (decrypted; the public test data in PreLibre2.swift) with every
+/// trend and history record set to one reading, so there is no rate and no trend projection. Each
+/// vector sets the raw glucose, raw temperature and sensor age (ring indices kept consistent, CRCs
+/// recomputed) and records what the official reader's algorithm (LibreLink 2.3.0's
+/// libDataProcessing, run unmodified on an emulator, one cold scan per vector, each scanned twice and
+/// agreeing) returned. `abbott == nil` means it returned no reading. Generated 2026-11-26.
+enum OfficialReaderVectors {
+    enum Kind { case temperature, level, range, warmup, wearlimit }
+
+    static let maxMinutesWearTime = 20_759
+
+    static let base: [UInt8] = hexBytes([
+        "815a101c030000000000000000000000000000000000000027630213430500b89600430500b89600430500",
+        "b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500b8",
+        "9600430500b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500b896",
+        "00430500b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500b89600",
+        "430500b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500b8960043",
+        "0500b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500b896004305",
+        "00b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500b89600430500",
+        "b89600430500b89600430500b89600620c010071c63001ca091751140396805a00cda618a31a0000b2c860"
+    ].joined())
+
+    static let rows: [(kind: Kind, raw: Int, rawTemperature: Int, age: Int, abbott: Int?)] = [
+        (kind: .temperature, raw: 1194, rawTemperature: 8236, age: 7200, abbott: 120),  // open-source 119.998
+        (kind: .temperature, raw: 1419, rawTemperature: 6832, age: 7200, abbott: 120),  // open-source 120.005
+        (kind: .temperature, raw: 1652, rawTemperature: 5820, age: 7200, abbott: 120),  // open-source 120.016
+        (kind: .temperature, raw: 1923, rawTemperature: 4976, age: 7200, abbott: 120),  // open-source 119.988
+        (kind: .level, raw: 920, rawTemperature: 5820, age: 7200, abbott: 60),  // open-source 60.013
+        (kind: .level, raw: 2628, rawTemperature: 5820, age: 7200, abbott: 200),  // open-source 200.021
+        (kind: .level, raw: 4458, rawTemperature: 5820, age: 7200, abbott: 350),  // open-source 350.029
+        (kind: .range, raw: 651, rawTemperature: 5820, age: 7200, abbott: 39),  // open-source 37.962
+        (kind: .range, raw: 670, rawTemperature: 5820, age: 7200, abbott: 40),  // open-source 39.52
+        (kind: .range, raw: 676, rawTemperature: 5820, age: 7200, abbott: 40),  // open-source 40.012
+        (kind: .range, raw: 682, rawTemperature: 5820, age: 7200, abbott: 41),  // open-source 40.503
+        (kind: .range, raw: 6281, rawTemperature: 5820, age: 7200, abbott: 499),  // open-source 499.464
+        (kind: .range, raw: 6288, rawTemperature: 5820, age: 7200, abbott: 500),  // open-source 500.038
+        (kind: .range, raw: 6294, rawTemperature: 5820, age: 7200, abbott: 501),  // open-source 500.53
+        (kind: .range, raw: 6300, rawTemperature: 5820, age: 7200, abbott: 501),  // open-source 501.022
+        (kind: .range, raw: 6532, rawTemperature: 5820, age: 7200, abbott: 501),  // open-source 520.039
+        (kind: .warmup, raw: 1652, rawTemperature: 5820, age: 56, abbott: nil),  // open-source 120.016
+        (kind: .warmup, raw: 1652, rawTemperature: 5820, age: 57, abbott: 120),  // open-source 120.016
+        (kind: .warmup, raw: 1652, rawTemperature: 5820, age: 58, abbott: 120),  // open-source 120.016
+        (kind: .warmup, raw: 1652, rawTemperature: 5820, age: 59, abbott: 120),  // open-source 120.016
+        (kind: .warmup, raw: 1652, rawTemperature: 5820, age: 60, abbott: 128),  // open-source 120.016
+        (kind: .wearlimit, raw: 1652, rawTemperature: 5820, age: 20758, abbott: 126),  // open-source 120.016
+        (kind: .wearlimit, raw: 1652, rawTemperature: 5820, age: 20759, abbott: 126),  // open-source 120.016
+        (kind: .wearlimit, raw: 1652, rawTemperature: 5820, age: 20760, abbott: nil),  // open-source None
+    ]
+
+    /// `base` with every record set to `raw` / `rawTemperature` and the sensor at `age` minutes
+    static func frame(raw: Int, rawTemperature: Int, age: Int) -> [UInt8] {
+        var f = base
+        let records = (0..<16).map { 28 + 6 * $0 } + (0..<32).map { 124 + 6 * $0 }
+        for offset in records {
+            setBits(&f, offset * 8, 14, raw)
+            setBits(&f, offset * 8 + 0x1a, 12, rawTemperature >> 2)
+        }
+        f[316] = UInt8(age & 0xff)
+        f[317] = UInt8(age >> 8)
+        f[26] = UInt8(age % 16)
+        f[27] = UInt8((age - 3) / 15 % 32)
+        for (start, end) in [(0, 24), (24, 320), (320, 344)] {
+            let crc = Crc.crc16(Array(f[(start + 2)..<end]), seed: 0xffff)
+            f[start] = UInt8(crc >> 8)
+            f[start + 1] = UInt8(crc & 0xff)
+        }
+        return f
+    }
+
+    private static func setBits(_ bytes: inout [UInt8], _ bitOffset: Int, _ count: Int, _ value: Int) {
+        for i in 0..<count {
+            let byte = (bitOffset + i) / 8, bit = (bitOffset + i) % 8
+            bytes[byte] = (bytes[byte] & ~UInt8(1 << bit)) | UInt8(((value >> i) & 1) << bit)
+        }
+    }
+
+    private static func hexBytes(_ hex: String) -> [UInt8] {
+        stride(from: 0, to: hex.count, by: 2).map {
+            let start = hex.index(hex.startIndex, offsetBy: $0)
+            return UInt8(hex[start..<hex.index(start, offsetBy: 2)], radix: 16)!
+        }
+    }
+}
+
+final class OfficialReaderVectorTests: XCTestCase {
+    private func sensorData(_ row: (kind: OfficialReaderVectors.Kind, raw: Int, rawTemperature: Int, age: Int, abbott: Int?)) -> SensorData {
+        let sensorData = SensorData(bytes: OfficialReaderVectors.frame(raw: row.raw, rawTemperature: row.rawTemperature, age: row.age))!
+        XCTAssertTrue(sensorData.hasValidCRCs)
+        XCTAssertEqual(sensorData.minutesSinceStart, row.age)
+        return sensorData
+    }
+
+    /// Temperature compensation (26-37 °C), glucose levels and the LO/HI edges match the official
+    /// reader exactly. Its 39 is LO and 501 is HI; both decide on the value rounded to whole mg/dL.
+    func testTemperatureLevelsAndRangeMatchOfficialReader() {
+        for row in OfficialReaderVectors.rows where [.temperature, .level, .range].contains(row.kind) {
+            let sensorData = sensorData(row)
+            let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+                for: sensorData.trendMeasurements(), calibrationInfo: sensorData.calibrationData, smoothTemperature: false)[0]
+            guard let calibrated, let reported = GlucoseAlgorithm.reportableGlucose(calibrated) else {
+                XCTFail("no value for \(row)")
+                continue
+            }
+            let condition = LibreGlucose.rangeCondition(for: calibrated)
+            switch row.abbott {
+            case 39:
+                XCTAssertEqual(condition, .belowRange, "\(row)")
+                XCTAssertEqual(reported, GlucoseAlgorithm.minimumGlucose, "\(row)")
+            case 501:
+                XCTAssertEqual(condition, .aboveRange, "\(row)")
+                XCTAssertEqual(reported, GlucoseAlgorithm.maximumGlucose, "\(row)")
+            default:
+                XCTAssertNil(condition, "\(row)")
+                XCTAssertEqual(reported.rounded(), Double(row.abbott ?? -1), "\(row)")
+            }
+        }
+    }
+
+    /// The official reader stops reporting once the sensor is past the FRAM footer's wear limit, and
+    /// reports at the limit minute itself: the same cut-off as `isPastWearLimit`.
+    func testWearLimitMatchesOfficialReader() {
+        for row in OfficialReaderVectors.rows where row.kind == .wearlimit {
+            let sensorData = sensorData(row)
+            XCTAssertEqual(sensorData.maxMinutesWearTime, OfficialReaderVectors.maxMinutesWearTime)
+            XCTAssertEqual(LibreTransmitterManagerV3.isPastWearLimit(age: sensorData.minutesSinceStart, maxAge: sensorData.maxMinutesWearTime),
+                           row.abbott == nil, "\(row)")
+        }
+    }
+
+    /// Warmup differs from the official reader on purpose, recorded here so a change is deliberate:
+    /// it reports uncorrected values from minute 57 and adds its sensor-age offset from minute 60
+    /// (+8 here: 128); LibreTransmitter reports nothing before 60 and has no age offset.
+    func testWarmupEdgeAgainstOfficialReader() {
+        for row in OfficialReaderVectors.rows where row.kind == .warmup {
+            let sensorData = sensorData(row)
+            let trend = sensorData.trendMeasurements()
+            let start = trend[0].date.addingTimeInterval(-60 * Double(row.age))
+            let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+                for: trend, calibrationInfo: sensorData.calibrationData, smoothTemperature: false, sensorStart: start)[0]
+            if row.age < 60 {
+                XCTAssertNil(calibrated, "\(row)")
+            } else {
+                XCTAssertEqual(calibrated?.rounded(), 120, "\(row)")
+                XCTAssertEqual(row.abbott, 128)
+            }
+        }
+    }
+}
