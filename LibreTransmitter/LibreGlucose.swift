@@ -33,10 +33,13 @@ public struct LibreGlucose: Codable, Hashable {
     }
 
     /// Classifies a calibrated reading against the sensor's reportable range for the sample condition.
+    /// LO/HI mark for a calibrated value. Decided on the value rounded to whole mg/dL, as the official
+    /// reader does: 39.5 shows as 40 and 500.4 as 500 (in range); 39.4 is LO and 500.5 is HI.
     static func rangeCondition(for calibrated: Double?) -> GlucoseCondition? {
         guard let calibrated else { return nil }
-        if calibrated < GlucoseAlgorithm.minimumGlucose { return .belowRange }
-        if calibrated > GlucoseAlgorithm.maximumGlucose { return .aboveRange }
+        let shown = calibrated.rounded()
+        if shown < GlucoseAlgorithm.minimumGlucose { return .belowRange }
+        if shown > GlucoseAlgorithm.maximumGlucose { return .aboveRange }
         return nil
     }
 
