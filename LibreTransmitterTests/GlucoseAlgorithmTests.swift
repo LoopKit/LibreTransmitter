@@ -303,6 +303,59 @@ class GlucoseAlgorithmTests: XCTestCase {
     }
 }
 
+// MARK: - The official reader's sensor-age offset (optional, off by default)
+
+final class OfficialAgeOffsetTests: XCTestCase {
+    /// Measured: (reading age in minutes, open-source mg/dL, what the official reader returned), from
+    /// cold scans of flat frames of a real sensor. The offset must reproduce each to the whole mg/dL.
+    private let measured: [(age: Double, glucose: Double, official: Double)] = [
+        (61, 199.99, 208), (119, 199.99, 213), (329, 199.99, 218), (419, 199.99, 218), (719, 199.99, 212),
+        (1439, 199.99, 203), (2279, 199.99, 200), (4319, 199.99, 200),            // early term, gone by ~38 h
+        (16559, 199.99, 202), (20159, 199.99, 205), (22319, 199.99, 207),          // late term from day 10
+        (239, 150.01, 167),                                                        // no low term at or above 90
+        (89, 40.0, 65), (239, 40.0, 70), (359, 59.96, 85), (539, 80.07, 98),       // low term inside 63-556 min
+        (549, 40.0, 65), (559, 40.0, 55), (719, 40.0, 52)                          // ...and outside it
+    ]
+
+    func testOffsetReproducesTheOfficialReader() {
+        for point in measured {
+            let adjusted = point.glucose + GlucoseAlgorithm.OfficialAgeOffset.offset(ageMinutes: point.age, glucose: point.glucose)
+            XCTAssertEqual(adjusted.rounded(), point.official, "\(point)")
+        }
+    }
+
+    func testOffsetShapeAndEdges() {
+        typealias Offset = GlucoseAlgorithm.OfficialAgeOffset
+        XCTAssertEqual(Offset.offset(ageMinutes: 59, glucose: 120), 0)                // warmup
+        XCTAssertEqual(Offset.offset(ageMinutes: 60, glucose: 120), 7.6, accuracy: 0.1) // early term starts at 60
+        XCTAssertEqual(Offset.offset(ageMinutes: 326, glucose: 120), 18.2, accuracy: 0.1) // peak at ~5.4 h
+        XCTAssertEqual(Offset.offset(ageMinutes: 5 * 1440, glucose: 120), 0, accuracy: 0.01) // mid-wear: nothing
+        XCTAssertEqual(Offset.offset(ageMinutes: 14 * 1440, glucose: 120), 16.0 / 3, accuracy: 0.01)
+        // additive: the same at every level at or above 90
+        XCTAssertEqual(Offset.offset(ageMinutes: 300, glucose: 100), Offset.offset(ageMinutes: 300, glucose: 300))
+        // the low term only between 63 and 556 minutes
+        XCTAssertEqual(Offset.offset(ageMinutes: 62, glucose: 40), Offset.offset(ageMinutes: 62, glucose: 200))
+        XCTAssertGreaterThan(Offset.offset(ageMinutes: 63, glucose: 40), Offset.offset(ageMinutes: 63, glucose: 200) + 10)
+        XCTAssertEqual(Offset.offset(ageMinutes: 557, glucose: 40), Offset.offset(ageMinutes: 557, glucose: 200))
+    }
+
+    /// Applied before the 40-500 clamp: early in wear the official reader turns 30 into about 60,
+    /// not LO, so the adjusted value must not be clamped and marked LO first.
+    func testOffsetComesBeforeTheReportableRangeClamp() {
+        let adjusted = 30 + GlucoseAlgorithm.OfficialAgeOffset.offset(ageMinutes: 120, glucose: 30)
+        XCTAssertEqual(adjusted, 59.6, accuracy: 0.5)
+        XCTAssertNil(LibreGlucose.rangeCondition(for: adjusted))
+    }
+
+    func testToggleIsOffByDefault() {
+        let defaults = UserDefaults.standard
+        let saved = defaults.object(forKey: Features.officialAgeOffsetKey)
+        defer { defaults.set(saved, forKey: Features.officialAgeOffsetKey) }
+        defaults.removeObject(forKey: Features.officialAgeOffsetKey)
+        XCTAssertFalse(Features.officialAgeOffsetEnabled)
+    }
+}
+
 // MARK: - Regression vectors from the official reader's algorithm
 
 /// Frames built from `Libre2.Example2` (decrypted; the public test data in PreLibre2.swift) with every
@@ -450,6 +503,19 @@ final class OfficialReaderVectorTests: XCTestCase {
                 XCTAssertEqual(calibrated?.rounded(), 120, "\(row)")
                 XCTAssertEqual(row.abbott, 128)
             }
+        }
+    }
+    /// With the sensor-age offset on, the frames whose official output depends on age (minute 60 of
+    /// warmup, and the late ramp at the wear limit) come out as the official reader's.
+    func testAgeOffsetMatchesOfficialReaderWhenOn() {
+        for row in OfficialReaderVectors.rows where (row.kind == .warmup && row.age >= 60) || (row.kind == .wearlimit && row.abbott != nil) {
+            let sensorData = sensorData(row)
+            let trend = sensorData.trendMeasurements()
+            let start = trend[0].date.addingTimeInterval(-60 * Double(row.age))
+            let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+                for: trend, calibrationInfo: sensorData.calibrationData, smoothTemperature: false,
+                sensorStart: start, officialAgeOffset: true)[0]
+            XCTAssertEqual(calibrated?.rounded(), row.abbott.map(Double.init), "\(row)")
         }
     }
 }

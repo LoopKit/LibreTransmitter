@@ -382,10 +382,50 @@ enum GlucoseAlgorithm {
         return temperatures
     }
 
+    /// The official reader's sensor-age offset: mg/dL it adds to the glucose it computes from the same
+    /// raw value, as a function of the reading's sensor age only. Measured black-box (LibreLink 2.3.0's
+    /// algorithm, unmodified, on synthetic flat FRAM frames of three real sensors, 287 scans, every one
+    /// reproduced within ±1 mg/dL); a fitted curve, not the reader's code. Additive, not a factor: the
+    /// same at 100, 200 and 300 mg/dL.
+    ///
+    /// - Early: a difference of two exponentials from sensor start, +7.6 at 60 minutes, peaking at
+    ///   +18.2 at about 5.4 h and gone by about 38 h.
+    /// - Low: from 63 to 556 minutes only, readings below 90 mg/dL get `k(t) · (90 − G)` on top, k
+    ///   falling from about 0.29 to 0.18 (+30 instead of +17 at 40 mg/dL and 4 h).
+    /// - Late: from day 10, +4/3 mg/dL per day (+5.3 at day 14, +6.7 at day 15).
+    ///
+    /// Raising readings on a new sensor, most of all lows, is the risky direction for dosing, and
+    /// nothing shows the raised value is more accurate. Off by default (`Features.officialAgeOffsetEnabled`).
+    enum OfficialAgeOffset {
+        static let earlyAmplitude = 97.0
+        static let earlyDecayHours = 7.11
+        static let earlyRiseHours = 4.24
+        static let lowThreshold = 90.0
+        static let lowWindowMinutes: ClosedRange<Double> = 63...556
+        static let lateStartDays = 10.0
+        static let lateMgdlPerDay = 4.0 / 3.0
+
+        /// mg/dL to add to `glucose` (mg/dL) for a reading `ageMinutes` after sensor start
+        static func offset(ageMinutes: Double, glucose: Double) -> Double {
+            guard ageMinutes >= 60 else {
+                return 0
+            }
+            let hours = ageMinutes / 60
+            let early = earlyAmplitude * (exp(-hours / earlyDecayHours) - exp(-hours / earlyRiseHours))
+            let low = lowWindowMinutes.contains(ageMinutes)
+                ? (0.306 - 0.0135 * hours) * max(0, lowThreshold - glucose)
+                : 0
+            let late = max(0, lateMgdlPerDay * (ageMinutes / 1440 - lateStartDays))
+            return early + low + late
+        }
+    }
+
     /// Calibrated glucose for each measurement, in the same order as `measurements`.
     /// When `smoothTemperature` is true, sensor temperature is low pass filtered across the measurements first.
-    /// `sensorStart` drops readings taken during the sensor warmup period
-    static func calibratedGlucoses(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool, sensorStart: Date? = nil) -> [Double?] {
+    /// `sensorStart` drops readings taken during the sensor warmup period, and with `officialAgeOffset`
+    /// adds the official reader's sensor-age offset (`OfficialAgeOffset`) to each reading, before any
+    /// clamping to the reportable range
+    static func calibratedGlucoses(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool, sensorStart: Date? = nil, officialAgeOffset: Bool = false) -> [Double?] {
         let temperatures = temperatures(for: measurements, calibrationInfo: calibrationInfo, smoothTemperature: smoothTemperature)
 
         return zip(measurements, temperatures).map { measurement, temperature in
@@ -399,9 +439,13 @@ enum GlucoseAlgorithm {
                 return nil
             }
 
-            return temperature.flatMap {
+            let glucose = temperature.flatMap {
                 measurement.calibratedGlucose(calibrationInfo: calibrationInfo, temperature: $0)
             }
+            guard officialAgeOffset, let glucose, let sensorAge else {
+                return glucose
+            }
+            return glucose + OfficialAgeOffset.offset(ageMinutes: sensorAge / 60, glucose: glucose)
         }
     }
 }

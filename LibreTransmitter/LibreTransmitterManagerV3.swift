@@ -313,9 +313,10 @@ extension LibreTransmitterManagerV3 {
     /// The projected current glucose that approximates the official reader: a short forward
     /// extrapolation of the trend, the same distance for rises and falls (see
     /// `predictDisplayGlucose`), with a fall limited to `DisplayProjection.maximumFallMgdl` below the
-    /// newest reading, stamped at the newest reading.
+    /// newest reading, stamped at the newest reading. With `Features.officialAgeOffsetEnabled` and a
+    /// known `sensorStart`, the official reader's sensor-age offset is added as in the trend path.
     /// Only shown in the settings view, not sent to Loop.
-    internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo) -> LibreGlucose? {
+    internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> LibreGlucose? {
         guard let predicted = measurements.predictDisplayGlucose() else {
             logger.info("not creating blood sugar prediction: not enough usable readings (\(measurements.count))")
             return nil
@@ -331,7 +332,7 @@ extension LibreTransmitterManagerV3 {
 
         guard let newestIndex,
               let temperature = temperatures[newestIndex],
-              let projected = predicted.calibratedGlucose(calibrationInfo: calibration, temperature: temperature) else {
+              let unadjusted = predicted.calibratedGlucose(calibrationInfo: calibration, temperature: temperature) else {
             logger.debug("Tried to predict glucose value but the result was outside the model's domain")
             return nil
         }
@@ -339,7 +340,14 @@ extension LibreTransmitterManagerV3 {
         // Limit how far a fall is projected below the newest usable reading (the one the projection
         // starts from), in mg/dL
         let newestReading = measurements.first { $0.date == predicted.date && $0.rawGlucose > 0 && $0.error == [.OK] }
-        let newest = newestReading?.calibratedGlucose(calibrationInfo: calibration, temperature: temperature)
+        // The official reader's sensor-age offset at the newest reading's age, each value at its own level
+        let ageMinutes = sensorStart.map { predicted.date.timeIntervalSince($0) / 60 }
+        let withAgeOffset: (Double) -> Double = { glucose in
+            guard Features.officialAgeOffsetEnabled, let ageMinutes else { return glucose }
+            return glucose + GlucoseAlgorithm.OfficialAgeOffset.offset(ageMinutes: ageMinutes, glucose: glucose)
+        }
+        let projected = withAgeOffset(unadjusted)
+        let newest = newestReading?.calibratedGlucose(calibrationInfo: calibration, temperature: temperature).map(withAgeOffset)
         let limited = newest.map { [Measurement].DisplayProjection.limitingFall(projected, newest: $0) } ?? projected
 
         guard let currentBg = GlucoseAlgorithm.reportableGlucose(limited) else {

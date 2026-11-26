@@ -155,7 +155,8 @@ extension LibreGlucose {
             for: measurements,
             calibrationInfo: nativeCalibrationData,
             smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled,
-            sensorStart: sensorStart)
+            sensorStart: sensorStart,
+            officialAgeOffset: Features.officialAgeOffsetEnabled)
 
         return zip(measurements, calibrated).compactMap { historical, calibrated in
             guard let glucose = GlucoseAlgorithm.reportableGlucose(calibrated) else {
@@ -178,7 +179,8 @@ extension LibreGlucose {
             for: measurements,
             calibrationInfo: nativeCalibrationData,
             smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled,
-            sensorStart: sensorStart)
+            sensorStart: sensorStart,
+            officialAgeOffset: Features.officialAgeOffsetEnabled)
 
         for (trend, calibrated) in zip(measurements, calibrated) {
             // trend arrows on each libreglucose value is not needed
