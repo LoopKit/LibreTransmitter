@@ -310,8 +310,10 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 // MARK: - Convenience functions
 extension LibreTransmitterManagerV3 {
 
-    /// The projected current glucose that mirrors the official reader: a short asymmetric forward
-    /// extrapolation of the trend (see `predictDisplayGlucose`), stamped at the newest reading.
+    /// The projected current glucose that approximates the official reader: a short forward
+    /// extrapolation of the trend, the same distance for rises and falls (see
+    /// `predictDisplayGlucose`), with a fall limited to `DisplayProjection.maximumFallMgdl` below the
+    /// newest reading, stamped at the newest reading.
     /// Only shown in the settings view, not sent to Loop.
     internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo) -> LibreGlucose? {
         guard let predicted = measurements.predictDisplayGlucose() else {
@@ -329,9 +331,18 @@ extension LibreTransmitterManagerV3 {
 
         guard let newestIndex,
               let temperature = temperatures[newestIndex],
-              let currentBg = GlucoseAlgorithm.reportableGlucose(predicted.calibratedGlucose(
-                calibrationInfo: calibration,
-                temperature: temperature)) else {
+              let projected = predicted.calibratedGlucose(calibrationInfo: calibration, temperature: temperature) else {
+            logger.debug("Tried to predict glucose value but the result was outside the model's domain")
+            return nil
+        }
+
+        // Limit how far a fall is projected below the newest usable reading (the one the projection
+        // starts from), in mg/dL
+        let newestReading = measurements.first { $0.date == predicted.date && $0.rawGlucose > 0 && $0.error == [.OK] }
+        let newest = newestReading?.calibratedGlucose(calibrationInfo: calibration, temperature: temperature)
+        let limited = newest.map { [Measurement].DisplayProjection.limitingFall(projected, newest: $0) } ?? projected
+
+        guard let currentBg = GlucoseAlgorithm.reportableGlucose(limited) else {
             logger.debug("Tried to predict glucose value but the result was outside the reportable range")
             return nil
         }

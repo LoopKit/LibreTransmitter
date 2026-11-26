@@ -234,12 +234,12 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertNotNil(unknownStart.first!)
     }
 
-    func testDisplayProjectionIsAsymmetricAndStampedNow() {
+    func testDisplayProjectionIsSymmetricAndStampedNow() {
         // risingTrend climbs 2 raw/min; the newest reading is raw 1500 at readings[0].date.
         let rising = risingTrend()
         let up = rising.predictDisplayGlucose()
-        // rising -> projected ~5.5 min ahead: 1500 + 2 * 5.5 = 1511
-        XCTAssertEqual(up?.rawGlucose, 1511)
+        // rising -> projected 8 min ahead: 1500 + 2 * 8 = 1516
+        XCTAssertEqual(up?.rawGlucose, 1516)
         // stamped at the newest reading (a current display value), not a future minute
         XCTAssertEqual(up?.date, rising[0].date)
         XCTAssertEqual(up?.rawTemperature, 8100)
@@ -250,8 +250,55 @@ class GlucoseAlgorithmTests: XCTestCase {
                         rawTemperature: $0.rawTemperature, rawTemperatureAdjustment: 0)
         }
         let down = falling.predictDisplayGlucose()
-        // falling -> projected only ~0.5 min ahead: 1500 - 2 * 0.5 = 1499 (conservative on the downside)
-        XCTAssertEqual(down?.rawGlucose, 1499)
+        // falling -> projected just as far: 1500 - 2 * 8 = 1484
+        XCTAssertEqual(down?.rawGlucose, 1484)
         XCTAssertEqual(down?.date, falling[0].date)
+    }
+
+    func testDisplayProjectionUsesSixteenMinutes() {
+        // Flat 1500 for minutes 0-5, one lower reading exactly 16 minutes old, and far-off readings
+        // 17-19 minutes old. The 16 minute reading is inside the window (inclusive edge) and tilts
+        // the slope up: least squares over (0...5 @ 1500, 16 @ 1400) gives 6.66 raw/min, so
+        // 1500 + 8 * 6.66 = 1553. A 15 minute window would give 1500; a 17 minute one 1103.
+        let now = Date(timeIntervalSince1970: 1_792_000_000)
+        let readings = ([0, 1, 2, 3, 4, 5, 16, 17, 18, 19] as [Double]).map { minute in
+            Measurement(date: now.addingTimeInterval(-60 * minute),
+                        rawGlucose: minute <= 5 ? 1500 : minute == 16 ? 1400 : 3000,
+                        rawTemperature: 8000, rawTemperatureAdjustment: 0)
+        }
+        XCTAssertEqual(readings.predictDisplayGlucose()?.rawGlucose, 1553)
+    }
+
+    func testDisplayProjectionFromASingleLibre2BLEPacket() {
+        // A Libre 2 BLE packet alone: trend readings 0, 2, 4, 6, 7, 12 and 15 minutes old, nothing
+        // buffered yet. The 15 minute slot is inside the window, and the uneven spacing still gives
+        // the exact slope of a straight line.
+        let now = Date(timeIntervalSince1970: 1_792_000_000)
+        func packet(_ rate: Int) -> [Measurement] {
+            [0, 2, 4, 6, 7, 12, 15].map { age in
+                Measurement(date: now.addingTimeInterval(-60 * Double(age)), rawGlucose: 1500 - rate * age,
+                            rawTemperature: 8000, rawTemperatureAdjustment: 0)
+            }
+        }
+        XCTAssertEqual(packet(3).predictDisplayGlucose()?.rawGlucose, 1500 + 3 * 8)
+        XCTAssertEqual(packet(-3).predictDisplayGlucose()?.rawGlucose, 1500 - 3 * 8)
+        // A reading dated 20 s past 15 minutes (buffered from an earlier packet) still counts. With
+        // only 0 and 2 minutes besides it, leaving it out would leave too few readings (nil).
+        let drifted = [(0.0, 1500), (120.0, 1494), (920.0, 1454)].map { seconds, raw in
+            Measurement(date: now.addingTimeInterval(-seconds), rawGlucose: raw,
+                        rawTemperature: 8000, rawTemperatureAdjustment: 0)
+        }
+        XCTAssertEqual(drifted.predictDisplayGlucose()?.rawGlucose, 1500 + 3 * 8)
+    }
+
+    func testDisplayProjectionLimitsFalls() {
+        typealias Projection = [Measurement].DisplayProjection
+        XCTAssertEqual(Projection.maximumFallMgdl, 15)
+        // a fall within the limit is kept: 120 at -1 mg/dL/min, 8 min ahead
+        XCTAssertEqual(Projection.limitingFall(112, newest: 120), 112)
+        // a fast fall stops 15 below the newest reading: 120 at -3 mg/dL/min would project to 96
+        XCTAssertEqual(Projection.limitingFall(96, newest: 120), 105)
+        // rises are not limited
+        XCTAssertEqual(Projection.limitingFall(144, newest: 120), 144)
     }
 }

@@ -484,22 +484,39 @@ public extension Array where Element ==  Measurement {
                            rawTemperatureAdjustment: newest.rawTemperatureAdjustment)
     }
 
-    /// Parameters of the display-only current-glucose projection that mirrors the official reader,
-    /// which shows a short asymmetric forward extrapolation of the trend rather than the raw latest
-    /// reading. Reverse-engineered from a small set of reference scans, so provisional and tunable.
+    /// Parameters of the display-only current-glucose projection that approximates the official
+    /// reader, which shows a short forward extrapolation of the trend rather than the raw latest
+    /// reading. Measured against the reader's algorithm on synthetic ramps: it projects rises and
+    /// falls equally far, about 8 minutes once a trend is established (about 2 minutes on a trend
+    /// younger than its 15 minute history spacing). A fixed window only approximates that.
     enum DisplayProjection {
-        /// Window (minutes) the rate of change is estimated over
-        static let rateWindowMinutes: Double = 6
-        /// How far ahead (minutes) a rising trend is projected
-        static let risingProjectionMinutes: Double = 5.5
-        /// How far ahead a falling trend is projected. The official reader is conservative on the
-        /// downside and barely projects falling glucose, so this is close to zero.
-        static let fallingProjectionMinutes: Double = 0.5
+        /// Window (minutes) the rate of change is estimated over. 16 rather than 15 so the oldest
+        /// trend slot of a Libre 2 BLE packet (15 minutes old) stays inside it despite a few seconds
+        /// of drift in the dates of readings buffered from earlier packets.
+        static let rateWindowMinutes: Double = 16
+        /// How far ahead (minutes) the trend is projected, rising or falling alike
+        static let projectionMinutes: Double = 8
+        /// Largest fall (mg/dL) the projection may show below the newest reading. The official reader
+        /// limits how far it projects an established fall, by glucose level: about 6 mg/dL ending at
+        /// 70, 10 at 80, 15 at 100-120, 12 at 220 and 9 at 300 (measured on 60 minute ramps of
+        /// -1.5 to -4 mg/dL/min). 15 is its largest, so a fall is never shown as smaller than the
+        /// reader shows it, while a fast fall isn't projected 25-30 mg/dL down. Rises aren't limited.
+        static let maximumFallMgdl: Double = 15
+
+        /// `projected` with any fall below `newest` limited to `maximumFallMgdl` (both mg/dL)
+        static func limitingFall(_ projected: Double, newest: Double) -> Double {
+            Swift.max(projected, newest - maximumFallMgdl)
+        }
     }
 
-    /// Display-only projection of the current glucose that mirrors the official reader: the recent
-    /// trend is extrapolated a few minutes ahead, further when rising than when falling. Operates on
-    /// raw glucose; the caller calibrates the result. Returns nil with too few recent readings.
+    /// Display-only projection of the current glucose that approximates the official reader: the
+    /// recent trend is extrapolated `DisplayProjection.projectionMinutes` ahead, the same distance
+    /// whether glucose is rising or falling. Operates on raw glucose; the caller calibrates the
+    /// result and limits a fall with `DisplayProjection.limitingFall`, which needs mg/dL. Returns nil
+    /// with too few recent readings.
+    ///
+    /// The readings may be unevenly spaced: a Libre 2 BLE packet alone holds readings 0, 2, 4, 6, 7,
+    /// 12 and 15 minutes old, and buffered readings fill the minutes between them over later packets.
     ///
     /// For display parity only. It must NOT drive dosing: the consumer (e.g. Loop) applies its own
     /// momentum prediction, and projecting here as well would double-count the trend.
@@ -524,8 +541,7 @@ public extension Array where Element ==  Measurement {
             return nil
         }
 
-        let horizon = slope >= 0 ? DisplayProjection.risingProjectionMinutes : DisplayProjection.fallingProjectionMinutes
-        let predicted = Double(newest.rawGlucose) + slope * horizon
+        let predicted = Double(newest.rawGlucose) + slope * DisplayProjection.projectionMinutes
         guard predicted.isFinite else {
             return nil
         }
