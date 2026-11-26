@@ -11,6 +11,13 @@ import LoopKit
 
 extension LibreTransmitterManagerV3 {
 
+    /// Whether a sensor `age` minutes old is past its wear limit (`maxAge`, the FRAM footer's
+    /// maxMinutesWearTime). Readings are reported up to and including the limit minute; 0 means the
+    /// limit is unknown, and then nothing is cut off.
+    static func isPastWearLimit(age: Int, maxAge: Int) -> Bool {
+        maxAge > 0 && age > maxAge
+    }
+
     public func libreSensorDidUpdate(with error: LibreError) {
 
         self.logDeviceCommunication("Sensor error \(error)", type: .error)
@@ -70,7 +77,17 @@ extension LibreTransmitterManagerV3 {
             NotificationHelper.sendSensorExpireAlertIfNeeded(minutesLeft: minutesLeft)
 
         }
-        
+
+        // Past its wear limit the sensor's readings are no longer reported, as the official reader
+        // stops then too. The FRAM/transmitter path stops on the sensor's own state byte instead.
+        guard !Self.isPastWearLimit(age: bleData.age, maxAge: sensor.maxAge) else {
+            logger.debug("sensor age \(bleData.age) is past its wear limit \(sensor.maxAge), not reporting readings")
+            delegate.notify { delegate in
+                await delegate?.cgmManager(self, hasNew: .error(LibreError.expiredSensor))
+            }
+            return
+        }
+
 
         verifySensorChange(for: sensor.uuid, activatedAt: Date() - TimeInterval(minutes: Double(bleData.age)))
            

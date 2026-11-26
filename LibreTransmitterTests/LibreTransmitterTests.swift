@@ -11,6 +11,15 @@ import XCTest
 
 class LibreTransmitterTests: XCTestCase {
 
+    // Readings are reported up to and including the wear limit minute, then cut off, as the
+    // official reader does; an unknown limit (0) cuts off nothing.
+    func testWearLimitCutoff() {
+        XCTAssertFalse(LibreTransmitterManagerV3.isPastWearLimit(age: 20_758, maxAge: 20_759))
+        XCTAssertFalse(LibreTransmitterManagerV3.isPastWearLimit(age: 20_759, maxAge: 20_759))
+        XCTAssertTrue(LibreTransmitterManagerV3.isPastWearLimit(age: 20_760, maxAge: 20_759))
+        XCTAssertFalse(LibreTransmitterManagerV3.isPastWearLimit(age: 30_000, maxAge: 0))
+    }
+
     override func setUp() {
         super.setUp()
         // Put setup code here. This method is called before the invocation of each test method in the class.
