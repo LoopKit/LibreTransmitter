@@ -343,6 +343,22 @@ enum GlucoseAlgorithm {
         return min(max(glucose, minimumGlucose), maximumGlucose)
     }
 
+    /// The official reader's own values for LO and HI: it returns 39 for every reading it shows as LO
+    /// and 501 for HI (measured, see `OfficialReaderVectors`)
+    static let belowRangeValue = 39.0
+    static let aboveRangeValue = 501.0
+
+    /// A calibrated value held at the official reader's LO/HI values (39 / 501) instead of at the
+    /// range bounds, so that a value averaged from it (glucose smoothing) still shows whether the
+    /// result is out of range; `reportableGlucose` of the average is what is reported.
+    /// Returns nil for missing, non positive and invalid values, as `reportableGlucose` does
+    static func rangeHeldGlucose(_ glucose: Double?) -> Double? {
+        guard let glucose, glucose.isFinite, glucose > 0 else {
+            return nil
+        }
+        return min(max(glucose, belowRangeValue), aboveRangeValue)
+    }
+
     /// Time based exponential moving average. Values must be sorted oldest first.
     /// nil values are passed through and don't update the filter
     static func lowPassFiltered(_ values: [(date: Date, value: Double?)], timeConstant: TimeInterval) -> [Double?] {
@@ -394,6 +410,11 @@ enum GlucoseAlgorithm {
     ///   falling from about 0.29 to 0.18 (+30 instead of +17 at 40 mg/dL and 4 h).
     /// - Late: from day 10, +4/3 mg/dL per day (+5.3 at day 14, +6.7 at day 15).
     ///
+    /// No offset below `lowestGlucose` (22 mg/dL). The official reader doesn't raise those: during
+    /// the first 12 hours it returns no reading for them, and later LO. Here they stay as they are, so
+    /// a value at or below 0 is still dropped and one up to 21 mg/dL is still LO, as with the offset
+    /// off. The reader's gap in the first 12 hours is not copied: LO is kept as the cautious choice.
+    ///
     /// Raising readings on a new sensor, most of all lows, is the risky direction for dosing, and
     /// nothing shows the raised value is more accurate. Off by default (`Features.officialAgeOffsetEnabled`).
     enum OfficialAgeOffset {
@@ -404,10 +425,13 @@ enum GlucoseAlgorithm {
         static let lowWindowMinutes: ClosedRange<Double> = 63...556
         static let lateStartDays = 10.0
         static let lateMgdlPerDay = 4.0 / 3.0
+        /// Lowest glucose that gets an offset, decided on the value rounded to whole mg/dL as the
+        /// official reader does (21.40 gets none, 21.57 does; measured at 1.5, 4 and 8 h)
+        static let lowestGlucose = 22.0
 
         /// mg/dL to add to `glucose` (mg/dL) for a reading `ageMinutes` after sensor start
         static func offset(ageMinutes: Double, glucose: Double) -> Double {
-            guard ageMinutes >= 60 else {
+            guard ageMinutes >= 60, glucose.rounded() >= lowestGlucose else {
                 return 0
             }
             let hours = ageMinutes / 60

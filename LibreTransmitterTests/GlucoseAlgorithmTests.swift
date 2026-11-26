@@ -84,6 +84,101 @@ class GlucoseAlgorithmTests: XCTestCase {
         XCTAssertEqual(GlucoseAlgorithm.reportableGlucose(742), 500)
     }
 
+    func testRangeHeldGlucoseUsesTheOfficialReadersLOAndHIValues() {
+        XCTAssertNil(GlucoseAlgorithm.rangeHeldGlucose(nil))
+        XCTAssertNil(GlucoseAlgorithm.rangeHeldGlucose(-5))
+        XCTAssertNil(GlucoseAlgorithm.rangeHeldGlucose(0))
+        XCTAssertNil(GlucoseAlgorithm.rangeHeldGlucose(.nan))
+        XCTAssertEqual(GlucoseAlgorithm.rangeHeldGlucose(12), 39)
+        XCTAssertEqual(GlucoseAlgorithm.rangeHeldGlucose(39.6), 39.6)
+        XCTAssertEqual(GlucoseAlgorithm.rangeHeldGlucose(120.4), 120.4)
+        XCTAssertEqual(GlucoseAlgorithm.rangeHeldGlucose(742), 501)
+    }
+
+    // MARK: LO/HI of trend readings, after glucose smoothing
+
+    /// Trend readings one minute apart, newest first, calibrating to `glucose` (to within 0.05 mg/dL)
+    private func trend(_ glucose: [Double]) -> [Measurement] {
+        let calibration = calibration()
+        let distance = { (raw: Int, target: Double) in
+            abs((self.measurement(rawGlucose: raw).glucoseValueFromRaw(calibrationInfo: calibration) ?? .infinity) - target)
+        }
+        return glucose.enumerated().map { minutesAgo, target in
+            let raw = (1...16383).min { distance($0, target) < distance($1, target) }!
+            return measurement(minutes: -Double(minutesAgo), rawGlucose: raw)
+        }
+    }
+
+    private func reportedTrend(_ glucose: [Double], smoothing mode: GlucoseSmoothingMode) -> [LibreGlucose] {
+        let key = "com.loopkit.libreGlucoseSmoothingMode"
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer { UserDefaults.standard.set(saved, forKey: key) }
+        UserDefaults.standard.glucoseSmoothingMode = mode
+        return LibreGlucose.fromTrendMeasurements(trend(glucose), nativeCalibrationData: calibration())
+    }
+
+    /// The value sent to Loop and its LO/HI mark must agree: a mark only on 40 or 500, and 40 or 500
+    /// marked whenever the value before clamping was out of range
+    private func assertMarksAgree(_ readings: [LibreGlucose], file: StaticString = #filePath, line: UInt = #line) {
+        for reading in readings {
+            XCTAssertTrue((40...500).contains(reading.glucoseDouble), "\(reading)", file: file, line: line)
+            switch reading.condition {
+            case .belowRange?: XCTAssertEqual(reading.glucoseDouble, 40, file: file, line: line)
+            case .aboveRange?: XCTAssertEqual(reading.glucoseDouble, 500, file: file, line: line)
+            default: XCTAssertTrue((39.5..<500.5).contains(reading.glucoseDouble), "\(reading)", file: file, line: line)
+            }
+        }
+    }
+
+    func testFallIntoLOIsMarkedOnTheSmoothedValue() {
+        let falling: [Double] = [38, 40.5, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68]
+
+        // smoothed, the newest reading averages above 40, so it is neither LO nor clamped. 38 enters
+        // the average as the official reader's LO value, 39
+        let smoothed = reportedTrend(falling, smoothing: .glucose)
+        assertMarksAgree(smoothed)
+        XCTAssertNil(smoothed[0].condition)
+        XCTAssertEqual(smoothed[0].glucoseDouble, (39 + 40.5 + 42 + 44 + 46) / 5, accuracy: 0.05)
+
+        // unsmoothed, it is LO
+        let unsmoothed = reportedTrend(falling, smoothing: .off)
+        assertMarksAgree(unsmoothed)
+        XCTAssertEqual(unsmoothed[0].condition, .belowRange)
+        XCTAssertEqual(unsmoothed[0].glucoseDouble, 40)
+    }
+
+    func testSteadyOutOfRangeReadingsStayLOAndHIWhenSmoothed() {
+        for mode in [GlucoseSmoothingMode.glucose, .off] {
+            let low = reportedTrend(Array(repeating: 25, count: 16), smoothing: mode)
+            assertMarksAgree(low)
+            XCTAssertTrue(low.allSatisfy { $0.condition == .belowRange }, "\(mode)")
+
+            let high = reportedTrend(Array(repeating: 650, count: 16), smoothing: mode)
+            assertMarksAgree(high)
+            XCTAssertTrue(high.allSatisfy { $0.condition == .aboveRange }, "\(mode)")
+        }
+    }
+
+    func testRiseIntoHIIsMarkedOnTheSmoothedValue() {
+        let rising: [Double] = [503, 499, 497, 495, 493, 491, 489, 487, 485, 483, 481, 479, 477, 475, 473, 471]
+
+        let smoothed = reportedTrend(rising, smoothing: .glucose)
+        assertMarksAgree(smoothed)
+        XCTAssertNil(smoothed[0].condition)
+
+        let unsmoothed = reportedTrend(rising, smoothing: .off)
+        assertMarksAgree(unsmoothed)
+        XCTAssertEqual(unsmoothed[0].condition, .aboveRange)
+    }
+
+    func testSyncIdOfAHeldReadingIsUnchanged() {
+        let date = Date(timeIntervalSince1970: 1_000_000)
+        XCTAssertEqual(LibreGlucose(unsmoothedGlucose: 39, glucoseDouble: 40, timestamp: date).syncId,
+                       LibreGlucose(unsmoothedGlucose: 40, glucoseDouble: 40, timestamp: date).syncId)
+        XCTAssertEqual(LibreGlucose(unsmoothedGlucose: 501, glucoseDouble: 500, timestamp: date).syncId,
+                       LibreGlucose(unsmoothedGlucose: 500, glucoseDouble: 500, timestamp: date).syncId)
+    }
+
     func testLowPassFilterStepResponse() {
         let start = Date(timeIntervalSince1970: 0)
         let values: [(date: Date, value: Double?)] = (0...5).map { minute in
@@ -347,6 +442,19 @@ final class OfficialAgeOffsetTests: XCTestCase {
         XCTAssertNil(LibreGlucose.rangeCondition(for: adjusted))
     }
 
+    /// The official reader doesn't raise readings that round below 22 mg/dL, so neither does the
+    /// offset: one at or below 0 is still dropped, and near-zero data (a sensor pulled off) isn't
+    /// lifted into range
+    func testNoOffsetBelowTheOfficialReadersLowestGlucose() {
+        typealias Offset = GlucoseAlgorithm.OfficialAgeOffset
+        for age in [90.0, 240, 480, 720] {
+            XCTAssertEqual(Offset.offset(ageMinutes: age, glucose: 21.4), 0, "\(age)")
+            XCTAssertEqual(Offset.offset(ageMinutes: age, glucose: 0), 0, "\(age)")
+            XCTAssertEqual(Offset.offset(ageMinutes: age, glucose: -20), 0, "\(age)")
+            XCTAssertGreaterThan(Offset.offset(ageMinutes: age, glucose: 21.6), 10, "\(age)")
+        }
+    }
+
     func testToggleIsOffByDefault() {
         let defaults = UserDefaults.standard
         let saved = defaults.object(forKey: Features.officialAgeOffsetKey)
@@ -365,7 +473,7 @@ final class OfficialAgeOffsetTests: XCTestCase {
 /// libDataProcessing, run unmodified on an emulator, one cold scan per vector, each scanned twice and
 /// agreeing) returned. `abbott == nil` means it returned no reading. Generated 2026-11-26.
 enum OfficialReaderVectors {
-    enum Kind { case temperature, level, range, warmup, wearlimit }
+    enum Kind { case temperature, level, range, warmup, wearlimit, low }
 
     static let maxMinutesWearTime = 20_759
 
@@ -405,6 +513,17 @@ enum OfficialReaderVectors {
         (kind: .wearlimit, raw: 1652, rawTemperature: 5820, age: 20758, abbott: 126),  // open-source 120.016
         (kind: .wearlimit, raw: 1652, rawTemperature: 5820, age: 20759, abbott: 126),  // open-source 120.016
         (kind: .wearlimit, raw: 1652, rawTemperature: 5820, age: 20760, abbott: nil),  // open-source None
+        // generated 2026-11-26 the same way
+        (kind: .low, raw: 371, rawTemperature: 5820, age: 240, abbott: nil),  // open-source 15.010
+        (kind: .low, raw: 444, rawTemperature: 5820, age: 240, abbott: nil),  // open-source 20.994
+        (kind: .low, raw: 449, rawTemperature: 5820, age: 240, abbott: nil),  // open-source 21.404
+        (kind: .low, raw: 451, rawTemperature: 5820, age: 240, abbott: 56),  // open-source 21.568
+        (kind: .low, raw: 456, rawTemperature: 5820, age: 240, abbott: 57),  // open-source 21.978
+        (kind: .low, raw: 554, rawTemperature: 5820, age: 240, abbott: 63),  // open-source 30.011
+        (kind: .low, raw: 444, rawTemperature: 5820, age: 720, abbott: nil),  // open-source 20.994
+        (kind: .low, raw: 444, rawTemperature: 5820, age: 840, abbott: 39),  // open-source 20.994
+        (kind: .low, raw: 310, rawTemperature: 5820, age: 4320, abbott: 39),  // open-source 10.010
+        (kind: .low, raw: 200, rawTemperature: 5820, age: 4320, abbott: 39),  // open-source 0.993
     ]
 
     /// `base` with every record set to `raw` / `rawTemperature` and the sensor at `age` minutes
@@ -516,6 +635,33 @@ final class OfficialReaderVectorTests: XCTestCase {
                 for: trend, calibrationInfo: sensorData.calibrationData, smoothTemperature: false,
                 sensorStart: start, officialAgeOffset: true)[0]
             XCTAssertEqual(calibrated?.rounded(), row.abbott.map(Double.init), "\(row)")
+        }
+    }
+
+    /// Low readings with the sensor-age offset on. The official reader raises readings from 22 mg/dL
+    /// (rounded) and LibreTransmitter raises the same ones by the same amount. Below that the reader
+    /// returns no reading in the first 12 hours and LO later; LibreTransmitter reports LO throughout,
+    /// on purpose (see `OfficialAgeOffset`).
+    func testLowEdgeWithAgeOffsetAgainstOfficialReader() {
+        for row in OfficialReaderVectors.rows where row.kind == .low {
+            let sensorData = sensorData(row)
+            let trend = sensorData.trendMeasurements()
+            let start = trend[0].date.addingTimeInterval(-60 * Double(row.age))
+            let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+                for: trend, calibrationInfo: sensorData.calibrationData, smoothTemperature: false,
+                sensorStart: start, officialAgeOffset: true)[0]
+            guard let calibrated, let reported = GlucoseAlgorithm.reportableGlucose(calibrated) else {
+                XCTFail("no value for \(row)")
+                continue
+            }
+            switch row.abbott {
+            case nil, 39?:
+                XCTAssertEqual(LibreGlucose.rangeCondition(for: calibrated), .belowRange, "\(row)")
+                XCTAssertEqual(reported, GlucoseAlgorithm.minimumGlucose, "\(row)")
+            case let abbott?:
+                XCTAssertNil(LibreGlucose.rangeCondition(for: calibrated), "\(row)")
+                XCTAssertEqual(reported.rounded(), Double(abbott), "\(row)")
+            }
         }
     }
 }

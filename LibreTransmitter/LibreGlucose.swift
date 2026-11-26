@@ -48,8 +48,9 @@ public struct LibreGlucose: Codable, Hashable {
     }
 
     public var syncId: String {
-        // Rounded so the identifier stays the same as when glucose was rounded before calibration
-        "\(Int(self.startDate.timeIntervalSince1970))\(self.unsmoothedGlucose.rounded())"
+        // Rounded so the identifier stays the same as when glucose was rounded before calibration, and
+        // within 40-500 so a trend reading held at 39 / 501 gets the same identifier as before
+        "\(Int(self.startDate.timeIntervalSince1970))\(min(max(self.unsmoothedGlucose, GlucoseAlgorithm.minimumGlucose), GlucoseAlgorithm.maximumGlucose).rounded())"
     }
 
     public var isStateValid: Bool {
@@ -188,14 +189,14 @@ extension LibreGlucose {
             // the sensordisplayable property
 
             // if sensor is ripped off body while transmitter is attached, values below 1 might be created
-            // libre manual: glucose readings are gathered in the system range of 40-500 mg/dL
-            if let glucose = GlucoseAlgorithm.reportableGlucose(calibrated) {
+            // libre manual: glucose readings are gathered in the system range of 40-500 mg/dL.
+            // Held at 39 / 501 here and clamped to 40-500 after smoothing, with LO/HI marked then
+            if let glucose = GlucoseAlgorithm.rangeHeldGlucose(calibrated) {
                 arr.append(LibreGlucose(
                     unsmoothedGlucose: glucose,
                     glucoseDouble: 0.0,
                     error: trend.error,
-                    timestamp: trend.date,
-                    condition: Self.rangeCondition(for: calibrated)))
+                    timestamp: trend.date))
             }
 
             // Just for expliciticity, if one of the values are invalid or 0,
@@ -226,6 +227,13 @@ extension LibreGlucose {
             for i in 0 ..< arr.count {
                 arr[i].glucoseDouble = arr[i].unsmoothedGlucose
             }
+        }
+
+        // LO/HI is decided on the value that is reported, after smoothing, so the value and its mark
+        // always agree; the official reader likewise decides on the value it shows
+        for i in 0 ..< arr.count {
+            arr[i].condition = Self.rangeCondition(for: arr[i].glucoseDouble)
+            arr[i].glucoseDouble = GlucoseAlgorithm.reportableGlucose(arr[i].glucoseDouble) ?? arr[i].glucoseDouble
         }
 
         return arr
