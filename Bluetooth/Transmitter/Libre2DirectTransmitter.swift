@@ -191,34 +191,21 @@ class Libre2DirectTransmitter: LibreTransmitterProxyProtocol {
 
             // todo: reset when sensor changes, but we currently don't need this
             // due to requirement of deleting cgmmanager when changing sensors
-            if let latestGlucose = sensorUpdate.trend.last,
-               let oldestGlucose = sensorUpdate.trend.first {
-                // ensures captured trends are recent enough
-                // but also older than the trends sent by sensor this time around
-                let latestGlucoseDate = latestGlucose.date - TimeInterval(minutes: 20)
-                let oldestGlucoseDate = oldestGlucose.date
+            if !sensorUpdate.trend.isEmpty {
+                let buffered = bufferedTrends.array
 
-                let filtered = bufferedTrends.array.filter {
-                    $0.date > latestGlucoseDate &&
-                    $0.date < oldestGlucoseDate
-                }.removingDuplicates(byKey: { $0.idValue})
-
-                // Could refactor this to be more performant, but decided not to
-                // This is more explicit and easier to grasp than doing above and below
-                // in one operation
-                for trend in sensorUpdate.trend {
-                    if !bufferedTrends.array.contains(where: { $0.date > trend.date}) {
-                        bufferedTrends.enqueue(trend)
-                    }
-
+                for trend in Libre2.trendsToBuffer(sensorUpdate.trend, buffered: buffered) {
+                    bufferedTrends.enqueue(trend)
                 }
 
                 logger.debug("sensor updated with trends: \((sensorUpdate.trend.count)): \(sensorUpdate.trend)")
 
-                if !filtered.isEmpty {
-                    logger.debug("Adding previously captured trends \((filtered.count)): \(filtered)")
-                    sensorUpdate.trend += filtered
+                // fill the minutes between the packet's trend slots with previously captured trends
+                let merged = Libre2.mergeTrends(sensorUpdate.trend, buffered: buffered)
+                if merged.count > sensorUpdate.trend.count {
+                    logger.debug("Adding previously captured trends \((merged.count - sensorUpdate.trend.count))")
                 }
+                sensorUpdate.trend = merged
             }
 
             delegate?.libreSensorDidUpdate(with: sensorUpdate, and: metadata!)

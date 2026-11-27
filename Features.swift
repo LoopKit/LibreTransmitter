@@ -24,6 +24,15 @@ public final class Features {
         set { UserDefaults.standard.set(newValue, forKey: allowOneMinuteReadingsKey) }
     }
 
+    static public let officialAgeOffsetKey = "com.loopkit.libre.officialAgeOffset"
+
+    /// Add the official reader's sensor-age offset to readings (`GlucoseAlgorithm.OfficialAgeOffset`).
+    /// Off by default: it raises readings on a new sensor, lows most of all.
+    static public var officialAgeOffsetEnabled: Bool {
+        get { UserDefaults.standard.bool(forKey: officialAgeOffsetKey) }
+        set { UserDefaults.standard.set(newValue, forKey: officialAgeOffsetKey) }
+    }
+
     static var currentMinimumDirectUpdateInterval: TimeInterval {
         minimumDirectUpdateInterval(oneMinuteReadingsEnabled: allowOneMinuteReadings)
     }

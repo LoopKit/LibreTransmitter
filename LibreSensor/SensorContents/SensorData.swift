@@ -456,38 +456,109 @@ public extension Array where Element ==  Measurement {
         return { x in intercept + slope * x }
     }
 
-    func predictBloodSugar(_ minutes: Double = 10) -> Measurement? {
+    /// Extrapolates the raw glucose of the measurements `minutes` past the newest one, using a linear fit.
+    /// Readings without a raw value, or flagged with a sensor error, are left out of the fit.
+    /// The predicted measurement carries the raw temperature of the newest reading.
+    /// Returns nil when fewer than `minimumReadings` readings are usable
+    func predictBloodSugar(_ minutes: Double = 10, minimumReadings: Int = 10) -> Measurement? {
+        let usable = filter { $0.rawGlucose > 0 && $0.error == [.OK] }
+            .sorted { $0.date < $1.date }
 
-        guard count > 15 else {
-            return first
-        }
-
-        guard let first else {
+        guard usable.count >= minimumReadings, let newest = usable.last else {
             return nil
         }
-        let sorted = sorted { $0.date < $1.date}
 
-        // keep the recent raw temperatures, we don't want to apply linear regression to them
-        let mostRecentTemperature = first.rawTemperature
-        let mostRecentAdjustment = first.rawTemperatureAdjustment
-        let mostRecentDate = first.date
-        let futureDate = mostRecentDate.addingTimeInterval(60*minutes)
+        // Minutes relative to the newest reading. Absolute timestamps (~1.8e9 s) lose precision
+        // in average(x * x) - average(x)^2
+        let minutesAgo = usable.map { $0.date.timeIntervalSince(newest.date) / 60 }
+        let rawGlucoseValues = usable.map { Double($0.rawGlucose) }
 
-        let glucoseAge = sorted.compactMap { measurement in
-            Double(measurement.date.timeIntervalSince1970)
+        let glucosePrediction = linearRegression(minutesAgo, rawGlucoseValues)(minutes)
+        guard glucosePrediction.isFinite else {
+            return nil
         }
 
-        let rawGlucoseValues = sorted.compactMap { measurement in
-            Double(measurement.rawGlucose)
+        return Measurement(date: newest.date.addingTimeInterval(60 * minutes),
+                           rawGlucose: Int(glucosePrediction.rounded()),
+                           rawTemperature: newest.rawTemperature,
+                           rawTemperatureAdjustment: newest.rawTemperatureAdjustment)
+    }
+
+    /// Parameters of the display-only current-glucose projection that approximates the official
+    /// reader, which shows a short forward extrapolation of the trend rather than the raw latest
+    /// reading. Measured against the reader's algorithm on synthetic ramps: it projects rises and
+    /// falls equally far, about 8 minutes once a trend is established (about 2 minutes on a trend
+    /// younger than its 15 minute history spacing). A fixed window only approximates that.
+    enum DisplayProjection {
+        /// Window (minutes) the rate of change is estimated over. 16 rather than 15 so the oldest
+        /// trend slot of a Libre 2 BLE packet (15 minutes old) stays inside it despite a few seconds
+        /// of drift in the dates of readings buffered from earlier packets.
+        static let rateWindowMinutes: Double = 16
+        /// How far ahead (minutes) the trend is projected, rising or falling alike
+        static let projectionMinutes: Double = 8
+        /// Largest fall (mg/dL) the projection may show below the newest reading. The official reader
+        /// limits how far it projects an established fall, by glucose level: about 6 mg/dL ending at
+        /// 70, 10 at 80, 15 at 100-120, 12 at 220 and 9 at 300 (measured on 60 minute ramps of
+        /// -1.5 to -4 mg/dL/min). 15 is its largest, so a fall is never shown as smaller than the
+        /// reader shows it, while a fast fall isn't projected 25-30 mg/dL down. Rises aren't limited.
+        static let maximumFallMgdl: Double = 15
+
+        /// `projected` with any fall below `newest` limited to `maximumFallMgdl` (both mg/dL)
+        static func limitingFall(_ projected: Double, newest: Double) -> Double {
+            Swift.max(projected, newest - maximumFallMgdl)
+        }
+    }
+
+    /// Display-only projection of the current glucose that approximates the official reader: the
+    /// recent trend is extrapolated `DisplayProjection.projectionMinutes` ahead, the same distance
+    /// whether glucose is rising or falling. Operates on raw glucose; the caller calibrates the
+    /// result and limits a fall with `DisplayProjection.limitingFall`, which needs mg/dL. Returns nil
+    /// with too few recent readings.
+    ///
+    /// The readings may be unevenly spaced: a Libre 2 BLE packet alone holds readings 0, 2, 4, 6, 7,
+    /// 12 and 15 minutes old, and buffered readings fill the minutes between them over later packets.
+    ///
+    /// For display parity only. It must NOT drive dosing: the consumer (e.g. Loop) applies its own
+    /// momentum prediction, and projecting here as well would double-count the trend.
+    func predictDisplayGlucose(minimumReadings: Int = 3) -> Measurement? {
+        let usable = filter { $0.rawGlucose > 0 && $0.error == [.OK] }
+            .sorted { $0.date < $1.date }
+
+        guard let newest = usable.last else {
+            return nil
         }
 
-        let glucosePrediction = linearRegression(glucoseAge, rawGlucoseValues)(futureDate.timeIntervalSince1970)
+        let windowStart = newest.date.addingTimeInterval(-60 * DisplayProjection.rateWindowMinutes)
+        let window = usable.filter { $0.date >= windowStart }
+        guard window.count >= minimumReadings else {
+            return nil
+        }
 
-        let predicted = Measurement(date: futureDate,
-                                   rawGlucose: Int(glucosePrediction.rounded()),
-                                   rawTemperature: mostRecentTemperature,
-                                   rawTemperatureAdjustment: mostRecentAdjustment)
-        return predicted
+        let minutesAgo = window.map { $0.date.timeIntervalSince(newest.date) / 60 }
+        let rawGlucoseValues = window.map { Double($0.rawGlucose) }
+        let slope = regressionSlope(minutesAgo, rawGlucoseValues)
+        guard slope.isFinite else {
+            return nil
+        }
 
+        let predicted = Double(newest.rawGlucose) + slope * DisplayProjection.projectionMinutes
+        guard predicted.isFinite else {
+            return nil
+        }
+
+        // Stamp at the newest reading: this is the projected current value shown now, not a future reading.
+        return Measurement(date: newest.date,
+                           rawGlucose: Int(predicted.rounded()),
+                           rawTemperature: newest.rawTemperature,
+                           rawTemperatureAdjustment: newest.rawTemperatureAdjustment)
+    }
+
+    /// Slope (units per minute) of the least squares line through the points. Zero when degenerate.
+    private func regressionSlope(_ xs: [Double], _ ys: [Double]) -> Double {
+        let denom = average(multiply(xs, xs)) - pow(average(xs), 2)
+        guard denom != 0 else {
+            return 0
+        }
+        return (average(multiply(xs, ys)) - average(xs) * average(ys)) / denom
     }
 }

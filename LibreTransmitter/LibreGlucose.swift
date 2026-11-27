@@ -19,10 +19,28 @@ public struct LibreGlucose: Codable, Hashable {
 
     public var timestamp: Date
 
-    public init(unsmoothedGlucose: Double, glucoseDouble: Double, error: [MeasurementError] = [MeasurementError.OK], timestamp: Date) {
+    /// Set when the reading was outside the sensor's 40-500 mg/dL range: the glucose value is clamped
+    /// to the boundary and this tells Loop/Nightscout the true value is below/above range (shown as
+    /// LO/HI). This is the LoopKit mechanism for out-of-range readings - not isDisplayOnly, which
+    /// would make Loop ignore the value and is unsafe for a genuine low.
+    public var condition: GlucoseCondition?
+
+    public init(unsmoothedGlucose: Double, glucoseDouble: Double, error: [MeasurementError] = [MeasurementError.OK], timestamp: Date, condition: GlucoseCondition? = nil) {
         self.unsmoothedGlucose = unsmoothedGlucose
         self.glucoseDouble = glucoseDouble
         self.timestamp = timestamp
+        self.condition = condition
+    }
+
+    /// Classifies a calibrated reading against the sensor's reportable range for the sample condition.
+    /// LO/HI mark for a calibrated value. Decided on the value rounded to whole mg/dL, as the official
+    /// reader does: 39.5 shows as 40 and 500.4 as 500 (in range); 39.4 is LO and 500.5 is HI.
+    static func rangeCondition(for calibrated: Double?) -> GlucoseCondition? {
+        guard let calibrated else { return nil }
+        let shown = calibrated.rounded()
+        if shown < GlucoseAlgorithm.minimumGlucose { return .belowRange }
+        if shown > GlucoseAlgorithm.maximumGlucose { return .aboveRange }
+        return nil
     }
 
     public static func timeDifference(oldGlucose: LibreGlucose, newGlucose: LibreGlucose) -> TimeInterval {
@@ -30,7 +48,9 @@ public struct LibreGlucose: Codable, Hashable {
     }
 
     public var syncId: String {
-        "\(Int(self.startDate.timeIntervalSince1970))\(self.unsmoothedGlucose)"
+        // Rounded so the identifier stays the same as when glucose was rounded before calibration, and
+        // within 40-500 so a trend reading held at 39 / 501 gets the same identifier as before
+        "\(Int(self.startDate.timeIntervalSince1970))\(min(max(self.unsmoothedGlucose, GlucoseAlgorithm.minimumGlucose), GlucoseAlgorithm.maximumGlucose).rounded())"
     }
 
     public var isStateValid: Bool {
@@ -131,50 +151,57 @@ extension LibreGlucose {
 }
 
 extension LibreGlucose {
-    static func fromHistoryMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
-        var arr = [LibreGlucose]()
+    static func fromHistoryMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> [LibreGlucose] {
+        let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+            for: measurements,
+            calibrationInfo: nativeCalibrationData,
+            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled,
+            sensorStart: sensorStart,
+            officialAgeOffset: Features.officialAgeOffsetEnabled)
 
-        for historical in measurements {
-            let calibrated = historical.calibratedGlucose(calibrationInfo: nativeCalibrationData)
-            let glucose = LibreGlucose(
-                // unsmoothedGlucose: historical.temperatureAlgorithmGlucose,
-                // glucoseDouble: historical.temperatureAlgorithmGlucose,
-                unsmoothedGlucose: calibrated,
-                glucoseDouble: calibrated,
-                error: historical.error,
-                timestamp: historical.date)
-
-            if glucose.glucoseDouble > 0 {
-                arr.append(glucose)
+        return zip(measurements, calibrated).compactMap { historical, calibrated in
+            guard let glucose = GlucoseAlgorithm.reportableGlucose(calibrated) else {
+                return nil
             }
+            return LibreGlucose(
+                unsmoothedGlucose: glucose,
+                glucoseDouble: glucose,
+                error: historical.error,
+                timestamp: historical.date,
+                condition: Self.rangeCondition(for: calibrated))
         }
-
-        return arr
     }
 
-    static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo) -> [LibreGlucose] {
+    static func fromTrendMeasurements(_ measurements: [Measurement], nativeCalibrationData: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> [LibreGlucose] {
         var arr = [LibreGlucose]()
 
         var shouldSmoothGlucose = true
-        for trend in measurements {
+        let calibrated = GlucoseAlgorithm.calibratedGlucoses(
+            for: measurements,
+            calibrationInfo: nativeCalibrationData,
+            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled,
+            sensorStart: sensorStart,
+            officialAgeOffset: Features.officialAgeOffsetEnabled)
+
+        for (trend, calibrated) in zip(measurements, calibrated) {
             // trend arrows on each libreglucose value is not needed
             // instead we calculate it once when latestbackfill is set, which in turn sets
             // the sensordisplayable property
-            let glucose = LibreGlucose(
-                // unsmoothedGlucose: trend.temperatureAlgorithmGlucose,
-                unsmoothedGlucose: trend.calibratedGlucose(calibrationInfo: nativeCalibrationData),
-                glucoseDouble: 0.0,
-                error: trend.error,
-                timestamp: trend.date)
+
             // if sensor is ripped off body while transmitter is attached, values below 1 might be created
-            // libre manual: glucose readings are gathered in the system range of 40-500 mg/dL
-            if glucose.unsmoothedGlucose > 0 && glucose.unsmoothedGlucose <= 500 {
-                arr.append(glucose)
+            // libre manual: glucose readings are gathered in the system range of 40-500 mg/dL.
+            // Held at 39 / 501 here and clamped to 40-500 after smoothing, with LO/HI marked then
+            if let glucose = GlucoseAlgorithm.rangeHeldGlucose(calibrated) {
+                arr.append(LibreGlucose(
+                    unsmoothedGlucose: glucose,
+                    glucoseDouble: 0.0,
+                    error: trend.error,
+                    timestamp: trend.date))
             }
 
-            // Just for expliciticity, if one of the values are 0,
+            // Just for expliciticity, if one of the values are invalid or 0,
             // then the rest of the values should not be smoothed
-            if glucose.unsmoothedGlucose <= 0 {
+            if (calibrated ?? 0) <= 0 {
                 shouldSmoothGlucose = false
             }
         }
@@ -200,6 +227,13 @@ extension LibreGlucose {
             for i in 0 ..< arr.count {
                 arr[i].glucoseDouble = arr[i].unsmoothedGlucose
             }
+        }
+
+        // LO/HI is decided on the value that is reported, after smoothing, so the value and its mark
+        // always agree; the official reader likewise decides on the value it shows
+        for i in 0 ..< arr.count {
+            arr[i].condition = Self.rangeCondition(for: arr[i].glucoseDouble)
+            arr[i].glucoseDouble = GlucoseAlgorithm.reportableGlucose(arr[i].glucoseDouble) ?? arr[i].glucoseDouble
         }
 
         return arr

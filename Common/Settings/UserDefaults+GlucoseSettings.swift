@@ -8,11 +8,31 @@
 
 import Foundation
 
+/// How readings are smoothed before they are reported. One kind at a time, never both,
+/// so the lag of one doesn't add to the other.
+enum GlucoseSmoothingMode: String, CaseIterable {
+    /// Nothing is smoothed
+    case off
+    /// Sensor temperature is low pass filtered before temperature compensation; glucose is not averaged
+    case temperature
+    /// Trend readings are averaged over about five minutes, as before the temperature filter existed
+    case glucose
+
+    var smoothsTemperature: Bool {
+        self == .temperature
+    }
+
+    var smoothsGlucose: Bool {
+        self == .glucose
+    }
+}
+
 extension UserDefaults {
     private enum Key: String {
         case mmSyncToNS = "com.loopkit.libreSyncToNs"
         case mmBackfillFromHistory = "com.loopkit.libreBackfillFromHistory"
         case glucoseSmoothingEnabled = "com.loopkit.libreGlucoseSmoothingEnabled"
+        case glucoseSmoothingMode = "com.loopkit.libreGlucoseSmoothingMode"
     }
 
     var mmSyncToNs: Bool {
@@ -33,13 +53,26 @@ extension UserDefaults {
         }
     }
 
-    var glucoseSmoothingEnabled: Bool {
+    /// Before the mode existed there was only glucose smoothing, on by default; whoever had
+    /// it on or off keeps it that way
+    var glucoseSmoothingMode: GlucoseSmoothingMode {
         get {
-            optionalBool(forKey: Key.glucoseSmoothingEnabled.rawValue) ?? true
+            if let mode = string(forKey: Key.glucoseSmoothingMode.rawValue).flatMap(GlucoseSmoothingMode.init(rawValue:)) {
+                return mode
+            }
+            return optionalBool(forKey: Key.glucoseSmoothingEnabled.rawValue) == false ? .off : .glucose
         }
         set {
-            set(newValue, forKey: Key.glucoseSmoothingEnabled.rawValue)
+            set(newValue.rawValue, forKey: Key.glucoseSmoothingMode.rawValue)
         }
+    }
+
+    var glucoseSmoothingEnabled: Bool {
+        glucoseSmoothingMode.smoothsGlucose
+    }
+
+    var temperatureSmoothingEnabled: Bool {
+        glucoseSmoothingMode.smoothsTemperature
     }
 
 }

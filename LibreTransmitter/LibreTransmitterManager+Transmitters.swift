@@ -157,16 +157,17 @@ extension LibreTransmitterManagerV3 {
         var prediction: [LibreGlucose] = []
 
         let trends = data.trendMeasurements()
+        let sensorStart = data.date.addingTimeInterval(-60 * Double(data.minutesSinceStart))
 
-        if let temp = createBloodSugarPrediction(trends, calibration: calibration) {
+        if let temp = createBloodSugarPrediction(trends, calibration: calibration, sensorStart: sensorStart) {
             prediction.append(temp)
         }
 
-        entries = LibreGlucose.fromTrendMeasurements(trends, nativeCalibrationData: calibration)
+        entries = LibreGlucose.fromTrendMeasurements(trends, nativeCalibrationData: calibration, sensorStart: sensorStart)
 
         if UserDefaults.standard.mmBackfillFromHistory {
             let history = data.historyMeasurements()
-            historical += LibreGlucose.fromHistoryMeasurements(history, nativeCalibrationData: calibration)
+            historical += LibreGlucose.fromHistoryMeasurements(history, nativeCalibrationData: calibration, sensorStart: sensorStart)
         }
 
         return (trends: entries, historical: historical, prediction: prediction)

@@ -310,28 +310,53 @@ open class LibreTransmitterManagerV3: CGMManager, LibreTransmitterDelegate {
 // MARK: - Convenience functions
 extension LibreTransmitterManagerV3 {
 
-    internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo) -> LibreGlucose? {
-        let allGlucoses = measurements.sorted { $0.date > $1.date }
-
-        // Increase to up to 15 to move closer to real blood sugar
-        // The cost is slightly more noise on consecutive readings
-        let glucosePredictionMinutes: Double = 10
-
-        guard allGlucoses.count > 15 else {
-            logger.info("not creating blood sugar prediction: less data elements than needed (\(allGlucoses.count))")
+    /// The projected current glucose that approximates the official reader: a short forward
+    /// extrapolation of the trend, the same distance for rises and falls (see
+    /// `predictDisplayGlucose`), with a fall limited to `DisplayProjection.maximumFallMgdl` below the
+    /// newest reading, stamped at the newest reading. With `Features.officialAgeOffsetEnabled` and a
+    /// known `sensorStart`, the official reader's sensor-age offset is added as in the trend path.
+    /// Only shown in the settings view, not sent to Loop.
+    internal func createBloodSugarPrediction(_ measurements: [Measurement], calibration: SensorData.CalibrationInfo, sensorStart: Date? = nil) -> LibreGlucose? {
+        guard let predicted = measurements.predictDisplayGlucose() else {
+            logger.info("not creating blood sugar prediction: not enough usable readings (\(measurements.count))")
             return nil
         }
 
-        if let predicted = allGlucoses.predictBloodSugar(glucosePredictionMinutes) {
-            let currentBg = predicted.calibratedGlucose(calibrationInfo: calibration)
-            let bgDate = predicted.date.addingTimeInterval(60 * -glucosePredictionMinutes)
-            logger.debug("Predicted glucose (not used) was: \(currentBg)")
-            return LibreGlucose(unsmoothedGlucose: currentBg, glucoseDouble: currentBg, timestamp: bgDate)
-        } else {
-            logger.debug("Tried to predict glucose value but failed!")
+        // Use the same (filtered) temperature as the newest reading gets in the trend path
+        let temperatures = GlucoseAlgorithm.temperatures(
+            for: measurements,
+            calibrationInfo: calibration,
+            smoothTemperature: UserDefaults.standard.temperatureSmoothingEnabled)
+        let newestIndex = measurements.indices.max { measurements[$0].date < measurements[$1].date }
+        let bgDate = predicted.date
+
+        guard let newestIndex,
+              let temperature = temperatures[newestIndex],
+              let unadjusted = predicted.calibratedGlucose(calibrationInfo: calibration, temperature: temperature) else {
+            logger.debug("Tried to predict glucose value but the result was outside the model's domain")
             return nil
         }
 
+        // Limit how far a fall is projected below the newest usable reading (the one the projection
+        // starts from), in mg/dL
+        let newestReading = measurements.first { $0.date == predicted.date && $0.rawGlucose > 0 && $0.error == [.OK] }
+        // The official reader's sensor-age offset at the newest reading's age, each value at its own level
+        let ageMinutes = sensorStart.map { predicted.date.timeIntervalSince($0) / 60 }
+        let withAgeOffset: (Double) -> Double = { glucose in
+            guard Features.officialAgeOffsetEnabled, let ageMinutes else { return glucose }
+            return glucose + GlucoseAlgorithm.OfficialAgeOffset.offset(ageMinutes: ageMinutes, glucose: glucose)
+        }
+        let projected = withAgeOffset(unadjusted)
+        let newest = newestReading?.calibratedGlucose(calibrationInfo: calibration, temperature: temperature).map(withAgeOffset)
+        let limited = newest.map { [Measurement].DisplayProjection.limitingFall(projected, newest: $0) } ?? projected
+
+        guard let currentBg = GlucoseAlgorithm.reportableGlucose(limited) else {
+            logger.debug("Tried to predict glucose value but the result was outside the reportable range")
+            return nil
+        }
+
+        logger.debug("Predicted glucose (shown in settings only) was: \(currentBg)")
+        return LibreGlucose(unsmoothedGlucose: currentBg, glucoseDouble: currentBg, timestamp: bgDate)
     }
 
     public func setObservables(sensorData: SensorDataProtocol?, bleData: Libre2.LibreBLEResponse?, metaData: LibreTransmitterMetadata?) {
@@ -506,7 +531,7 @@ extension LibreTransmitterManagerV3 {
                 return NewGlucoseSample(
                     date: $0.startDate,
                     quantity: $0.quantity,
-                    condition: nil,
+                    condition: $0.condition,
                     trend: trend,
                     trendRate: trendRate,
                     isDisplayOnly: false,

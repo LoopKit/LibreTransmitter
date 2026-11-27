@@ -79,7 +79,7 @@ public final class SimulatedSensorPairingService: SensorPairingProtocol {
             macAddress = Data(response.reversed()).hexEncodedString().uppercased()
         }
 
-        guard sensorUID.count == 8 && patchInfo.count == 6 && fram.count == 344 else {
+        guard sensorUID.count == 8 && (patchInfo.count == 6 || patchInfo.count == 8) && fram.count == 344 else {
             throw PairingError.noSensorData
         }
         let sensorType = SensorType(patchInfo: patchInfo)

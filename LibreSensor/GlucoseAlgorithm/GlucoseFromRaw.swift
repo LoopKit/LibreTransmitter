@@ -258,73 +258,233 @@ fileprivate let t2 = [
     0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999, 0.12834519999999999,
 ];
 
-extension MeasurementProtocol {
-    func roundedGlucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo) -> Int {
-        Int(round(glucoseValueFromRaw(calibrationInfo: calibrationInfo)))
+
+/// The factory calibrated Libre 1 / Libre 2 (EU) glucose algorithm.
+/// Functions return nil instead of NaN, infinity or crashing when the raw or calibration
+/// values fall outside the domain of the model.
+enum GlucoseAlgorithm {
+    /// Readings below this are clamped to it (the sensor's rated lower bound; shown as "LO" by the reader).
+    /// The linear model is unreliable below it since (g3 - t1) approaches zero
+    static let minimumGlucose = 40.0
+    /// Readings above this are clamped to it (the sensor's rated upper bound; shown as "HI" by the reader)
+    static let maximumGlucose = 500.0
+
+    /// Sensor operating temperature range (FreeStyle Libre spec, 10-45 °C). Outside this band the
+    /// thermistor-derived temperature is treated as invalid and the reading is dropped, mirroring the
+    /// official algorithm's TEMP_HIGH / TEMP_LOW data-quality flags. A corrupt thermistor read would
+    /// otherwise feed g2 = 1.045^(32.5 - t) and produce a plausible-looking but wrong glucose.
+    /// Normal on-body readings sit around 30-37 °C, so this only rejects clearly invalid data.
+    static let operatingTemperatureRange = 10.0 ... 45.0
+
+    /// Sensor warmup period. Readings taken before the sensor has equilibrated are unreliable, so
+    /// they are dropped when the sensor start time is known, matching the official algorithm's
+    /// SensorInWarmupException. FreeStyle Libre 2 warms up for 60 minutes.
+    static let warmupInterval: TimeInterval = 60 * 60
+
+    /// Time constant of the low pass filter applied to sensor temperature.
+    /// The thermistor sits on the skin side and reacts faster than interstitial fluid, so unfiltered
+    /// temperature changes show up as glucose noise of about 4.5 % per °C (g2 = 1.045^(32.5 - t)).
+    /// That lag is assumed, not measured: if the sensor's chemistry follows the skin temperature at
+    /// once, the filter instead delays a real temperature change
+    static let temperatureTimeConstant: TimeInterval = 5 * 60
+
+    private static let ca = 0.0009180023
+    private static let cb = 0.0001964561
+    private static let cc = 0.0000007061775
+    private static let cd = 0.00000005283566
+
+    /// Sensor temperature in °C from the thermistor reading (extended Steinhart-Hart equation)
+    static func temperature(rawTemperature: Int, rawTemperatureAdjustment: Int, i6: Double) -> Double? {
+        let rRight = Double(rawTemperatureAdjustment) + i6
+        guard rRight > 0 else {
+            return nil
+        }
+
+        let R = Double(rawTemperature) * (1000 + 71500) / rRight - 1000
+        guard R > 0 else {
+            return nil
+        }
+
+        let logR = log(R)
+        let d = ((cd * logR + cc) * logR + cb) * logR + ca
+        let temperature = 1 / d - 273.15
+
+        guard temperature.isFinite, operatingTemperatureRange.contains(temperature) else {
+            return nil
+        }
+        return temperature
     }
 
-    func roundedGlucoseValueFromRaw2(calibrationInfo: SensorData.CalibrationInfo) -> Double{
-        round(glucoseValueFromRaw(calibrationInfo: calibrationInfo))
+    /// Glucose in mg/dL from the raw glucose reading at the given sensor temperature
+    static func glucose(rawGlucose: Int, temperature: Double, calibrationInfo: SensorData.CalibrationInfo) -> Double? {
+        let index = calibrationInfo.i2 - 1
+        guard t1.indices.contains(index), calibrationInfo.i4 != calibrationInfo.i3 else {
+            return nil
+        }
+
+        let g1 = 65 * (Double(rawGlucose) - calibrationInfo.i3) / (calibrationInfo.i4 - calibrationInfo.i3)
+        let g2 = pow(1.045, 32.5 - temperature)
+        let glucose = (g1 * g2 - t1[index]) / t2[index]
+
+        return glucose.isFinite ? glucose : nil
     }
 
-    
-    func glucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo) -> Double {
-        let x : Double = 1000 + 71500;
-        let y : Double = 1000;
+    /// Clamps a calibrated glucose value to the reportable range.
+    /// Returns nil for missing, non positive and too high values
+    static func reportableGlucose(_ glucose: Double?) -> Double? {
+        guard let glucose, glucose.isFinite, glucose > 0 else {
+            return nil
+        }
+        // The sensor's specified range is 40-500 mg/dL and the linear model is unreliable outside it,
+        // so clamp to the range. The official reader does the same in spirit: it keeps the reading and
+        // shows "LO" below 40 or "HI" above 500 (exclusive bounds; 40 and 500 are shown as numbers)
+        // rather than dropping it. Clamping both ends - instead of clamping lows but discarding highs -
+        // avoids a silent gap during a very high reading, where no value would otherwise be reported.
+        return min(max(glucose, minimumGlucose), maximumGlucose)
+    }
 
-        let ca = 0.0009180023;
-        let cb = 0.0001964561;
-        let cc = 0.0000007061775;
-        let cd = 0.00000005283566;
+    /// The official reader's own values for LO and HI: it returns 39 for every reading it shows as LO
+    /// and 501 for HI (measured, see `OfficialReaderVectors`)
+    static let belowRangeValue = 39.0
+    static let aboveRangeValue = 501.0
 
-        let rawTemperature = Double(self.rawTemperature)
-        let rawTemperatureAdjustment = Double(self.rawTemperatureAdjustment)
-        let rawGlucose = Double(self.rawGlucose)
+    /// A calibrated value held at the official reader's LO/HI values (39 / 501) instead of at the
+    /// range bounds, so that a value averaged from it (glucose smoothing) still shows whether the
+    /// result is out of range; `reportableGlucose` of the average is what is reported.
+    /// Returns nil for missing, non positive and invalid values, as `reportableGlucose` does
+    static func rangeHeldGlucose(_ glucose: Double?) -> Double? {
+        guard let glucose, glucose.isFinite, glucose > 0 else {
+            return nil
+        }
+        return min(max(glucose, belowRangeValue), aboveRangeValue)
+    }
 
-        let rLeft = rawTemperature * x
-        let rRight = rawTemperatureAdjustment + calibrationInfo.i6
+    /// Time based exponential moving average. Values must be sorted oldest first.
+    /// nil values are passed through and don't update the filter
+    static func lowPassFiltered(_ values: [(date: Date, value: Double?)], timeConstant: TimeInterval) -> [Double?] {
+        var filtered: Double?
+        var filteredDate: Date?
 
+        return values.map { date, value in
+            guard let value else {
+                return nil
+            }
 
-        let R  = ( rLeft / rRight ) - y; //67300.05624296963
+            if let previous = filtered, let previousDate = filteredDate {
+                let alpha = 1 - exp(-max(date.timeIntervalSince(previousDate), 0) / timeConstant)
+                filtered = previous + alpha * (value - previous)
+            } else {
+                filtered = value
+            }
+            filteredDate = date
 
+            return filtered
+        }
+    }
 
-        let logR  = log(R) //11.116916351337814
+    /// Sensor temperature in °C for each measurement, in the same order as `measurements`,
+    /// low pass filtered across the measurements when `smoothTemperature` is true
+    static func temperatures(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool) -> [Double?] {
+        var temperatures = measurements.map { $0.temperature(calibrationInfo: calibrationInfo) }
 
-        //print("logR:", logR)
+        if smoothTemperature {
+            let chronological = measurements.indices.sorted { measurements[$0].date < measurements[$1].date }
+            let filtered = lowPassFiltered(chronological.map { (measurements[$0].date, temperatures[$0]) }, timeConstant: temperatureTimeConstant)
+            for (index, temperature) in zip(chronological, filtered) {
+                temperatures[index] = temperature
+            }
+        }
 
-        //d = (logR ** 3) * cd + (logR ** 2) * cc + logR * cb + ca;
+        return temperatures
+    }
 
-        let d  = pow(logR, 3) * cd + pow(logR, 2) * cc + logR * cb + ca
-        //print("d:", d) //0.003261852422880152
+    /// The official reader's sensor-age offset: mg/dL it adds to the glucose it computes from the same
+    /// raw value, as a function of the reading's sensor age only. Measured black-box (LibreLink 2.3.0's
+    /// algorithm, unmodified, on synthetic flat FRAM frames of three real sensors, 287 scans, every one
+    /// reproduced within ±1 mg/dL); a fitted curve, not the reader's code. Additive, not a factor: the
+    /// same at 100, 200 and 300 mg/dL.
+    ///
+    /// - Early: a difference of two exponentials from sensor start, +7.6 at 60 minutes, peaking at
+    ///   +18.2 at about 5.4 h and gone by about 38 h.
+    /// - Low: from 63 to 556 minutes only, readings below 90 mg/dL get `k(t) · (90 − G)` on top, k
+    ///   falling from about 0.29 to 0.18 (+30 instead of +17 at 40 mg/dL and 4 h).
+    /// - Late: from day 10, +4/3 mg/dL per day (+5.3 at day 14, +6.7 at day 15).
+    ///
+    /// No offset below `lowestGlucose` (22 mg/dL). The official reader doesn't raise those: during
+    /// the first 12 hours it returns no reading for them, and later LO. Here they stay as they are, so
+    /// a value at or below 0 is still dropped and one up to 21 mg/dL is still LO, as with the offset
+    /// off. The reader's gap in the first 12 hours is not copied: LO is kept as the cautious choice.
+    ///
+    /// Raising readings on a new sensor, most of all lows, is the risky direction for dosing, and
+    /// nothing shows the raised value is more accurate. Off by default (`Features.officialAgeOffsetEnabled`).
+    enum OfficialAgeOffset {
+        static let earlyAmplitude = 97.0
+        static let earlyDecayHours = 7.11
+        static let earlyRiseHours = 4.24
+        static let lowThreshold = 90.0
+        static let lowWindowMinutes: ClosedRange<Double> = 63...556
+        static let lateStartDays = 10.0
+        static let lateMgdlPerDay = 4.0 / 3.0
+        /// Lowest glucose that gets an offset, decided on the value rounded to whole mg/dL as the
+        /// official reader does (21.40 gets none, 21.57 does; measured at 1.5, 4 and 8 h)
+        static let lowestGlucose = 22.0
 
-        let temperature = 1 / d - 273.15;
+        /// mg/dL to add to `glucose` (mg/dL) for a reading `ageMinutes` after sensor start
+        static func offset(ageMinutes: Double, glucose: Double) -> Double {
+            guard ageMinutes >= 60, glucose.rounded() >= lowestGlucose else {
+                return 0
+            }
+            let hours = ageMinutes / 60
+            let early = earlyAmplitude * (exp(-hours / earlyDecayHours) - exp(-hours / earlyRiseHours))
+            let low = lowWindowMinutes.contains(ageMinutes)
+                ? (0.306 - 0.0135 * hours) * max(0, lowThreshold - glucose)
+                : 0
+            let late = max(0, lateMgdlPerDay * (ageMinutes / 1440 - lateStartDays))
+            return early + low + late
+        }
+    }
 
-        //print("temperature:", temperature) //33.4242622154008
+    /// Calibrated glucose for each measurement, in the same order as `measurements`.
+    /// When `smoothTemperature` is true, sensor temperature is low pass filtered across the measurements first.
+    /// `sensorStart` drops readings taken during the sensor warmup period, and with `officialAgeOffset`
+    /// adds the official reader's sensor-age offset (`OfficialAgeOffset`) to each reading, before any
+    /// clamping to the reportable range
+    static func calibratedGlucoses(for measurements: [Measurement], calibrationInfo: SensorData.CalibrationInfo, smoothTemperature: Bool, sensorStart: Date? = nil, officialAgeOffset: Bool = false) -> [Double?] {
+        let temperatures = temperatures(for: measurements, calibrationInfo: calibrationInfo, smoothTemperature: smoothTemperature)
 
-        let g1 = 65.0 * (rawGlucose - calibrationInfo.i3) / (calibrationInfo.i4 - calibrationInfo.i3); // 13.647891477440282
-        let g2 = pow(1.045, 32.5 - temperature); //0.9601333057248764
+        return zip(measurements, temperatures).map { measurement, temperature in
+            let sensorAge = sensorStart.map { measurement.date.timeIntervalSince($0) }
 
+            // Drop readings taken during the sensor warmup period: the sensor has not equilibrated
+            // yet and its output is unreliable, so the official algorithm reports no value
+            // (SensorInWarmupException) until warmup completes. Only applied when the sensor start
+            // time is known; otherwise readings pass through unchanged.
+            if let sensorAge, sensorAge < warmupInterval {
+                return nil
+            }
 
-        let g3 = g1 * g2 // 13.103795160409106
-
-        //print("g1:", g1)
-        //print("g2:", g2)
-        //print("g3:", g3)
-
-
-        let v1 = t1[calibrationInfo.i2 - 1] // 1.75
-        let v2 = t2[calibrationInfo.i2 - 1] // 0.0706475
-
-        //print("v1:", v1)
-        //print("v2", v2)
-
-        let res = (g3 - v1) / v2; // 160.71050158051037
-
-        //print("res:", res)
-
-        return  res
-
+            let glucose = temperature.flatMap {
+                measurement.calibratedGlucose(calibrationInfo: calibrationInfo, temperature: $0)
+            }
+            guard officialAgeOffset, let glucose, let sensorAge else {
+                return glucose
+            }
+            return glucose + OfficialAgeOffset.offset(ageMinutes: sensorAge / 60, glucose: glucose)
+        }
     }
 }
 
+extension MeasurementProtocol {
+    /// Sensor temperature in °C
+    func temperature(calibrationInfo: SensorData.CalibrationInfo) -> Double? {
+        GlucoseAlgorithm.temperature(rawTemperature: rawTemperature, rawTemperatureAdjustment: rawTemperatureAdjustment, i6: calibrationInfo.i6)
+    }
 
+    /// Glucose in mg/dL, using this reading's own temperature unless another (e.g. filtered) temperature is given
+    func glucoseValueFromRaw(calibrationInfo: SensorData.CalibrationInfo, temperature: Double? = nil) -> Double? {
+        guard let temperature = temperature ?? self.temperature(calibrationInfo: calibrationInfo) else {
+            return nil
+        }
+        return GlucoseAlgorithm.glucose(rawGlucose: rawGlucose, temperature: temperature, calibrationInfo: calibrationInfo)
+    }
+}
